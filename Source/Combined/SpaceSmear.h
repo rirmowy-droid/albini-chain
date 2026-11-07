@@ -5,15 +5,17 @@
 
 /** Przestrzeń na końcu łańcucha.
 
-    Szerokość: „podwójne nagranie” - lewy i prawy kanał dostają osobno
+    Używany dwa razy: na samym przesterze (krótszy ogon) i na całości.
+
+    Panorama (szerokość): „podwójne nagranie” - lewy i prawy kanał dostają osobno
     opóźnioną i lekko pływającą kopię (jak dwie zagrane ścieżki), plus
     poszerzenie M/S.
-    Rozmycie: rozpraszacze (allpassy) + długi, gęsty, modulowany pogłos,
+    Pogłos (rozmycie): rozpraszacze (allpassy) + długi, gęsty, modulowany pogłos,
     które rozlewają ścianę przesteru w przestrzeni. */
 class SpaceSmear
 {
 public:
-    void prepare (double sampleRate)
+    void prepare (double sampleRate, float tailSeconds = 3.2f)
     {
         sr = (float) sampleRate;
         static const float apMs[2][4] = { { 4.1f, 7.7f, 11.3f, 17.9f }, { 4.7f, 8.3f, 12.9f, 19.1f } };
@@ -30,7 +32,7 @@ public:
             for (int k = 0; k < 8; ++k)
             {
                 rv[s].len[k] = stonoga::kLen[k] * 1.25f * 0.001f * sr + (float) s * 0.0023f * sr;
-                rv[s].g[k]   = std::pow (10.f, -3.f * rv[s].len[k] / (3.2f * sr));
+                rv[s].g[k]   = std::pow (10.f, -3.f * rv[s].len[k] / (tailSeconds * sr));
             }
         }
         damp = 1.f - std::exp (-2.f * stonoga::kPi * 5200.f / sr);

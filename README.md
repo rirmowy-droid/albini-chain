@@ -15,12 +15,16 @@ W DAW zrób ponowne skanowanie wtyczek.
 
 ## Stonoga x Albini
 
-**Kostka Stonoga → Amp → Cab (2 IR) → Chór → Room → Console → Tape → Rozmycie/Szerokość → Wyjście → Ochrona uszu**
+**Kostka Stonoga → Amp → Cab (2 IR) → [na przesterze: Kompresja → Panorama/Pogłos] → Chór → Room → Console → Tape → [na całości: Kompresja → Panorama/Pogłos] → Wyjście → Ochrona uszu**
 
 - Góra: wszystkie gałki [Stonoga FX](https://github.com/rirmowy-droid/stonoga-fx); „Do wzmacniacza” ustala, jak mocno kostka uderza we wzmacniacz.
 - Footswitch **KOSTKA: WŁ/WYŁ** – płynne przełączenie; silnik kostki pracuje cały czas, więc ogony pogłosów i sprzężenia zostają (tryb „trails”).
 - Dół: łańcuch Albini + **Ochrona uszu** na samym końcu (przyciemnia pisk, ścisza długo za głośny dźwięk, limiter −1 dB).
-- **Rozmycie**: rozpraszacze + długi, gęsty pogłos, który rozlewa ścianę przesteru. **Szerokość**: „podwójne nagranie” (osobno pływająca kopia na lewo i prawo) + poszerzenie M/S.
+- Dwa zestawy po trzy gałki: **na przesterze** i **na całości**:
+  - **Kompresja** – na przesterze szybka (wyrównuje i wydłuża wybrzmienie), na całości wolna i łagodna (skleja przester, chór i pogłosy). Na 0 wyłączona.
+  - **Panorama** – „podwójne nagranie” (osobno pływająca kopia na lewo i prawo) + poszerzenie M/S.
+  - **Pogłos** – rozpraszacze + gęsty, modulowany pogłos (na przesterze krótszy, 2 s; na całości 3,2 s).
+- Okno można powiększać i zmniejszać (przeciągnij prawy dolny róg).
 - **Chór** (nowy): 6 głosów (oktawa w dół, unison, kwinty, cicha oktawa w górę) z wibrato, płynące samogłoski a/o/u i ciemny pogłos. Bez pętli zwrotnej, więc nie narasta w pisk.
 - 10 presetów opartych na mocnym przesterze, wyrównanych głośnością: Ściana, Mięso w drewnianym pokoju, Gęsty fuzz na taśmie, Ciepły crunch, Shoegaze, Rozlana katedra, Chór nad ścianą, Anielski chór, Maska nō, Albini bez kostki.
 

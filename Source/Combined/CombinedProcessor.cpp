@@ -47,10 +47,18 @@ namespace
         { "roomSize",   "Rozmiar"   },
         { "console",    "Konsoleta" },
         { "tape",       "Taśma"     },
-        { "smear",      "Rozmycie"  },
-        { "width",      "Szerokość" },
         { "outputGain", "Wyjście"   },
         { "protect",    "Ochrona uszu" },
+    };
+
+    // [0..2] na przesterze, [3..5] na całości
+    const ChainDef kBus[CombinedProcessor::kNumBusParams] = {
+        { "distComp",  "Kompresja" },
+        { "distWidth", "Panorama"  },
+        { "distSmear", "Pogłos"    },
+        { "busComp",   "Kompresja" },
+        { "width",     "Panorama"  },
+        { "smear",     "Pogłos"    },
     };
 
     juce::String pl (const char* s) { return juce::String::fromUTF8 (s); }
@@ -59,6 +67,8 @@ namespace
 const char* CombinedProcessor::pedalParamId (int i)        { return kPedal[i].id; }
 const char* CombinedProcessor::chainParamId (int i)        { return kChain[i].id; }
 const char* CombinedProcessor::chainParamShortName (int i) { return kChain[i].shortName; }
+const char* CombinedProcessor::busParamId (int i)          { return kBus[i].id; }
+const char* CombinedProcessor::busParamShortName (int i)   { return kBus[i].shortName; }
 
 juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLayout()
 {
@@ -91,8 +101,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
     v.push_back (std::make_unique<P> (ID { "roomSize", 1 },   pl ("Rozmiar pokoju"),      R (0.f, 1.f), c.roomSize, pct));
     v.push_back (std::make_unique<P> (ID { "console", 1 },    pl ("Konsoleta"),           R (0.f, 1.f), c.console, pct));
     v.push_back (std::make_unique<P> (ID { "tape", 1 },       pl ("Taśma"),               R (0.f, 1.f), c.tape, pct));
-    v.push_back (std::make_unique<P> (ID { "smear", 1 },      pl ("Rozmycie"),            R (0.f, 1.f), c.smear, pct));
-    v.push_back (std::make_unique<P> (ID { "width", 1 },      pl ("Szerokość"),           R (0.f, 1.f), c.width, pct));
+    v.push_back (std::make_unique<P> (ID { "distComp", 1 },   pl ("Przester: kompresja"), R (0.f, 1.f), c.distComp, pct));
+    v.push_back (std::make_unique<P> (ID { "distWidth", 1 },  pl ("Przester: panorama"),  R (0.f, 1.f), c.distWidth, pct));
+    v.push_back (std::make_unique<P> (ID { "distSmear", 1 },  pl ("Przester: pogłos"),    R (0.f, 1.f), c.distSmear, pct));
+    v.push_back (std::make_unique<P> (ID { "busComp", 1 },    pl ("Całość: kompresja"),   R (0.f, 1.f), c.busComp, pct));
+    v.push_back (std::make_unique<P> (ID { "width", 1 },      pl ("Całość: panorama"),    R (0.f, 1.f), c.width, pct));
+    v.push_back (std::make_unique<P> (ID { "smear", 1 },      pl ("Całość: pogłos"),      R (0.f, 1.f), c.smear, pct));
     v.push_back (std::make_unique<P> (ID { "outputGain", 1 }, pl ("Wyjście"),             R (-24.f, 12.f, 0.1f), c.outputGain, db));
     v.push_back (std::make_unique<P> (ID { "protect", 1 },    pl ("Ochrona uszu"),        R (0.f, 1.f), c.protect, pct));
 
@@ -121,6 +135,10 @@ CombinedProcessor::CombinedProcessor()
     pSmear      = apvts.getRawParameterValue ("smear");
     pWidth      = apvts.getRawParameterValue ("width");
     pChoir      = apvts.getRawParameterValue ("choir");
+    pDistComp   = apvts.getRawParameterValue ("distComp");
+    pDistWidth  = apvts.getRawParameterValue ("distWidth");
+    pDistSmear  = apvts.getRawParameterValue ("distSmear");
+    pBusComp    = apvts.getRawParameterValue ("busComp");
 
     pedal.builtInProtection = false;
 }
@@ -154,7 +172,10 @@ void CombinedProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     console.prepare (spec);
     tape.prepare (spec);
     choir.prepare (sampleRate);
-    space.prepare (sampleRate);
+    distComp.prepare (sampleRate, Compressor::Mode::Sustain);
+    busComp.prepare (sampleRate, Compressor::Mode::Glue);
+    distSpace.prepare (sampleRate, 2.0f);   // krótszy ogon: przester ma zostać czytelny
+    space.prepare (sampleRate, 3.2f);
     outputGain.prepare (spec);
     outputGain.setRampDurationSeconds (0.05);
     guard.prepare (sampleRate, nch);
@@ -193,6 +214,10 @@ void CombinedProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     choir.setAmount (pChoir->load());
     space.setSmear (pSmear->load());
     space.setWidth (pWidth->load());
+    distComp.setAmount (pDistComp->load());
+    busComp.setAmount (pBusComp->load());
+    distSpace.setSmear (pDistSmear->load());
+    distSpace.setWidth (pDistWidth->load());
     pedalMix.setTargetValue (pPedalOn->load() > 0.5f ? 1.0f : 0.0f);
 
     juce::dsp::AudioBlock<float> full (buffer);
@@ -247,10 +272,18 @@ void CombinedProcessor::processChunk (juce::dsp::AudioBlock<float>& block)
     // --- łańcuch nagraniowy ----------------------------------------------
     amp.process (block);
     cab.process (block);
+
+    // na przesterze
+    distComp.process (block);
+    distSpace.process (block);
+
     choir.process (block);
     room.process (block);
     console.process (block);
     tape.process (block);
+
+    // na całości
+    busComp.process (block);
     space.process (block);
 
     juce::dsp::ProcessContextReplacing<float> ctx (block);
@@ -297,8 +330,12 @@ void CombinedProcessor::setCurrentProgram (int index)
     setParam ("roomSize",   c.roomSize);
     setParam ("console",    c.console);
     setParam ("tape",       c.tape);
-    setParam ("smear",      c.smear);
+    setParam ("distComp",   c.distComp);
+    setParam ("distWidth",  c.distWidth);
+    setParam ("distSmear",  c.distSmear);
+    setParam ("busComp",    c.busComp);
     setParam ("width",      c.width);
+    setParam ("smear",      c.smear);
     setParam ("outputGain", c.outputGain);
     setParam ("protect",    c.protect);
 }

@@ -27,7 +27,7 @@ private:
         juce::Label label;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
     };
-    juce::OwnedArray<Knob> pedalKnobs, chainKnobs;
+    juce::OwnedArray<Knob> pedalKnobs, chainKnobs, busKnobs;
 
     juce::ComboBox presets;
     juce::TextButton footswitch;
@@ -42,7 +42,7 @@ private:
     std::unique_ptr<juce::FileChooser> chooser;
     juce::File lastIRFolder;
 
-    juce::Rectangle<int> pedalPanel, chainPanel;
+    juce::Rectangle<int> pedalPanel, chainPanel, distGroup, busGroup;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CombinedEditor)
 };

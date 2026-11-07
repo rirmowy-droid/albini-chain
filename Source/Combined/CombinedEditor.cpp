@@ -13,7 +13,7 @@ namespace
     const juce::Colour tapeCol { 0xffd9c9a3 };
 
     constexpr int pedalCols = 10;
-    constexpr int headerH   = 64;
+    constexpr int headerH   = 58;
 
     juce::String pl (const char* s) { return juce::String::fromUTF8 (s); }
 
@@ -70,6 +70,19 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
             p.apvts, CombinedProcessor::chainParamId (i), k->slider);
     }
 
+    // --- na przesterze / na całości ---
+    for (int i = 0; i < CombinedProcessor::kNumBusParams; ++i)
+    {
+        auto* k = busKnobs.add (new Knob());
+        k->label.setText (pl (CombinedProcessor::busParamShortName (i)), juce::dontSendNotification);
+        styleKnob (k->slider, k->label, tapeCol, juce::Colour (0xff3a3a3a), tapeCol);
+        k->slider.setColour (juce::Slider::textBoxTextColourId, juce::Colours::lightgrey);
+        addAndMakeVisible (k->slider);
+        addAndMakeVisible (k->label);
+        k->attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+            p.apvts, CombinedProcessor::busParamId (i), k->slider);
+    }
+
     // --- presety ---
     for (int i = 0; i < p.getNumPrograms(); ++i)
         presets.addItem (p.getProgramName (i), i + 1);
@@ -107,7 +120,9 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     }
     lastIRFolder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
 
-    setSize (1000, 690);
+    setResizable (true, true);
+    setResizeLimits (820, 620, 1800, 1300);
+    setSize (1000, 780);
     timerCallback();
     startTimerHz (4);
 }
@@ -181,8 +196,8 @@ void CombinedEditor::paint (juce::Graphics& g)
     g.drawText ("x ALBINI", 226, 10, 200, 36, juce::Justification::centredLeft);
     g.setColour (juce::Colour (0xff6d5f4d));
     g.setFont (juce::FontOptions (12.5f));
-    g.drawText (pl ("kostka > wzmacniacz > kolumna > pokój > konsoleta > taśma > ochrona uszu"),
-                20, 44, 520, 16, juce::Justification::centredLeft);
+    g.drawText (pl ("kostka > wzmacniacz > kolumna > przester: komp/panorama/pogłos > chór > pokój > konsoleta > taśma > całość"),
+                20, 40, 640, 16, juce::Justification::centredLeft);
 
     // panel kostki
     g.setColour (paper);
@@ -197,6 +212,19 @@ void CombinedEditor::paint (juce::Graphics& g)
     g.fillRoundedRectangle (chainPanel.toFloat(), 6.0f);
     g.setColour (tapeCol);
     g.drawText (pl ("ŁAŃCUCH NAGRANIOWY ALBINI"), chainPanel.reduced (16, 10).removeFromTop (16), juce::Justification::centredLeft);
+
+    // grupy: na przesterze / na całości
+    for (int gi = 0; gi < 2; ++gi)
+    {
+        const auto r = gi == 0 ? distGroup : busGroup;
+        g.setColour (juce::Colour (0xff2e2e2e));
+        g.fillRoundedRectangle (r.toFloat(), 5.0f);
+        g.setColour (gi == 0 ? seal.brighter (0.2f) : tapeCol);
+        g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 5.0f, 1.0f);
+        g.setFont (juce::FontOptions (12.5f, juce::Font::bold));
+        g.drawText (gi == 0 ? pl ("NA PRZESTERZE") : pl ("NA CAŁOŚCI"),
+                    r.reduced (10, 4).removeFromTop (16), juce::Justification::centredLeft);
+    }
 }
 
 void CombinedEditor::resized()
@@ -208,26 +236,27 @@ void CombinedEditor::resized()
     header.removeFromRight (10);
     presets.setBounds (header.removeFromRight (260));
 
-    // --- kostka: 28 gałek w 3 rzędach ---
+    // --- kostka: 28 gałek w 3 rzędach (około połowy wysokości) ---
     const int pedalRows = (CombinedProcessor::kNumPedalParams + pedalCols - 1) / pedalCols;
-    pedalPanel = area.removeFromTop (34 + pedalRows * 118 + 8);
+    const int rowH = juce::jlimit (88, 160, (area.getHeight() - 340) / pedalRows);
+    pedalPanel = area.removeFromTop (34 + pedalRows * rowH + 6);
     {
         auto r = pedalPanel.reduced (14, 0).withTrimmedTop (30);
         const int w = r.getWidth() / pedalCols;
         for (int i = 0; i < pedalKnobs.size(); ++i)
         {
             const int row = i / pedalCols, col = i % pedalCols;
-            juce::Rectangle<int> cell (r.getX() + col * w, r.getY() + row * 118, w, 118);
-            pedalKnobs[i]->label.setBounds (cell.removeFromTop (28).reduced (2, 0));
+            juce::Rectangle<int> cell (r.getX() + col * w, r.getY() + row * rowH, w, rowH);
+            pedalKnobs[i]->label.setBounds (cell.removeFromTop (26).reduced (2, 0));
             pedalKnobs[i]->slider.setBounds (cell.reduced (8, 0).withTrimmedBottom (4));
         }
     }
 
-    // --- łańcuch: 9 gałek + pasek IR ---
-    chainPanel = area.reduced (10, 8);
+    // --- łańcuch: 9 gałek, pod spodem dwie grupy po 3 i pasek IR ---
+    chainPanel = area.reduced (10, 6);
     {
-        auto r = chainPanel.reduced (12, 0).withTrimmedTop (28);
-        auto strip = r.removeFromBottom (44).reduced (4, 8);
+        auto r = chainPanel.reduced (12, 0).withTrimmedTop (26);
+        auto strip = r.removeFromBottom (42).reduced (4, 7);
         const int half = strip.getWidth() / 2;
         for (int s = 0; s < 2; ++s)
         {
@@ -238,12 +267,29 @@ void CombinedEditor::resized()
             slot.name.setBounds (sr.reduced (6, 0));
         }
 
+        auto groups = r.removeFromBottom (r.getHeight() / 2).reduced (0, 2);
+        const int gw = groups.getWidth() / 2;
+        distGroup = groups.removeFromLeft (gw).reduced (4, 0);
+        busGroup  = groups.reduced (4, 0);
+        for (int gi = 0; gi < 2; ++gi)
+        {
+            auto gr = (gi == 0 ? distGroup : busGroup).reduced (8, 0).withTrimmedTop (18);
+            const int kw = gr.getWidth() / 3;
+            for (int j = 0; j < 3; ++j)
+            {
+                auto* k = busKnobs[gi * 3 + j];
+                auto cell = (j == 2) ? gr : gr.removeFromLeft (kw);
+                k->label.setBounds (cell.removeFromTop (18));
+                k->slider.setBounds (cell.reduced (6, 0).withTrimmedBottom (2));
+            }
+        }
+
         const int n = chainKnobs.size();
         const int w = r.getWidth() / n;
         for (int i = 0; i < n; ++i)
         {
             auto cell = (i == n - 1) ? r : r.removeFromLeft (w);
-            chainKnobs[i]->label.setBounds (cell.removeFromTop (22));
+            chainKnobs[i]->label.setBounds (cell.removeFromTop (20));
             chainKnobs[i]->slider.setBounds (cell.reduced (6, 0));
         }
     }
