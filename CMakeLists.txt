@@ -28,7 +28,38 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
-# Plugin
+# Shared settings
+# ---------------------------------------------------------------------------
+set(ALBINI_DSP_SOURCES
+    Source/DSP/AmpStage.cpp
+    Source/DSP/CabinetStage.cpp
+    Source/DSP/SimpleRoom.cpp
+    Source/DSP/ConsoleSaturation.cpp
+    Source/DSP/TapeEmulation.cpp)
+
+function(albini_configure target)
+    target_include_directories(${target} PRIVATE Source)
+    target_compile_definitions(${target}
+        PUBLIC
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+            JUCE_VST3_CAN_REPLACE_VST2=0)
+    if(MSVC)
+        # Source files are UTF-8 (Polish labels); keep MSVC from guessing a code page.
+        target_compile_options(${target} PRIVATE /utf-8)
+    endif()
+    target_link_libraries(${target}
+        PRIVATE
+            juce::juce_audio_utils
+            juce::juce_dsp
+        PUBLIC
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_lto_flags
+            juce::juce_recommended_warning_flags)
+endfunction()
+
+# ---------------------------------------------------------------------------
+# 1) Albini Chain
 # ---------------------------------------------------------------------------
 juce_add_plugin(AlbiniChain
     COMPANY_NAME                "Custom"
@@ -49,30 +80,32 @@ target_sources(AlbiniChain
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp
-        Source/DSP/AmpStage.cpp
-        Source/DSP/CabinetStage.cpp
-        Source/DSP/SimpleRoom.cpp
-        Source/DSP/ConsoleSaturation.cpp
-        Source/DSP/TapeEmulation.cpp)
+        ${ALBINI_DSP_SOURCES})
 
-target_include_directories(AlbiniChain PRIVATE Source)
+albini_configure(AlbiniChain)
 
-target_compile_definitions(AlbiniChain
-    PUBLIC
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
-        JUCE_VST3_CAN_REPLACE_VST2=0)
+# ---------------------------------------------------------------------------
+# 2) Stonoga x Albini - kostka Stonoga + lancuch Albini w jednej wtyczce
+# ---------------------------------------------------------------------------
+juce_add_plugin(StonogaAlbini
+    COMPANY_NAME                "Custom"
+    IS_SYNTH                    FALSE
+    NEEDS_MIDI_INPUT            FALSE
+    NEEDS_MIDI_OUTPUT           FALSE
+    IS_MIDI_EFFECT              FALSE
+    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    COPY_PLUGIN_AFTER_BUILD     FALSE
+    PLUGIN_MANUFACTURER_CODE    Cust
+    PLUGIN_CODE                 StAl
+    FORMATS                     VST3 Standalone
+    VST3_CATEGORIES             Fx Distortion
+    PRODUCT_NAME                "Stonoga x Albini"
+    BUNDLE_ID                   "com.custom.stonogaalbini")
 
-if(MSVC)
-    # Source files are UTF-8; keep MSVC from guessing a code page.
-    target_compile_options(AlbiniChain PRIVATE /utf-8)
-endif()
-
-target_link_libraries(AlbiniChain
+target_sources(StonogaAlbini
     PRIVATE
-        juce::juce_audio_utils
-        juce::juce_dsp
-    PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_lto_flags
-        juce::juce_recommended_warning_flags)
+        Source/Combined/CombinedProcessor.cpp
+        Source/Combined/CombinedEditor.cpp
+        ${ALBINI_DSP_SOURCES})
+
+albini_configure(StonogaAlbini)

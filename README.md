@@ -1,4 +1,4 @@
-# Albini Chain (VST3)
+# Albini Chain (VST3) + Stonoga x Albini
 
 Surowy łańcuch nagraniowy w stylu Steve'a Albiniego, lata 90.:
 
@@ -6,7 +6,21 @@ Surowy łańcuch nagraniowy w stylu Steve'a Albiniego, lata 90.:
 
 ## Pobieranie
 **[Najnowsze wydanie](https://github.com/rirmowy-droid/albini-chain/releases/latest)** → `AlbiniChain-Setup.exe` → uruchom.
-Wtyczka trafi do `C:\Program Files\Common Files\VST3`; w DAW zrób ponowne skanowanie wtyczek.
+Instalator wgrywa:
+- **Albini Chain** (VST3) – sam łańcuch nagraniowy,
+- **Stonoga x Albini** (VST3) – kostka Stonoga + cały łańcuch w jednej wtyczce,
+- **Stonoga x Albini (bez DAW)** – ta sama wtyczka jako aplikacja w menu Start (gitara przez interfejs audio).
+
+W DAW zrób ponowne skanowanie wtyczek.
+
+## Stonoga x Albini
+
+**Kostka Stonoga → Amp → Cab (2 IR) → Room → Console → Tape → Wyjście → Ochrona uszu**
+
+- Góra: wszystkie gałki [Stonoga FX](https://github.com/rirmowy-droid/stonoga-fx); „Do wzmacniacza” ustala, jak mocno kostka uderza we wzmacniacz.
+- Footswitch **KOSTKA: WŁ/WYŁ** – płynne przełączenie; silnik kostki pracuje cały czas, więc ogony pogłosów i sprzężenia zostają (tryb „trails”).
+- Dół: łańcuch Albini + **Ochrona uszu** na samym końcu (przyciemnia pisk, ścisza długo za głośny dźwięk, limiter −1 dB).
+- 12 presetów całości, wyrównanych głośnością (np. „Mięso w drewnianym pokoju”, „Bateria na taśmie”, „Ściana mgły”, „Albini bez kostki”).
 
 ## Build
 

@@ -39,8 +39,11 @@ jobs:
       - name: Upload VST3
         uses: actions/upload-artifact@v4
         with:
-          name: AlbiniChain-Windows-VST3
-          path: build/AlbiniChain_artefacts/Release/VST3/
+          name: AlbiniChain-Windows-plugins
+          path: |
+            build/AlbiniChain_artefacts/Release/VST3/
+            build/StonogaAlbini_artefacts/Release/VST3/
+            build/StonogaAlbini_artefacts/Release/Standalone/
           if-no-files-found: error
           retention-days: 30
 
@@ -49,7 +52,7 @@ jobs:
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress }
-          $env:APPVER = "1.1.${{ github.run_number }}"
+          $env:APPVER = "1.2.${{ github.run_number }}"
           & $iscc installer\albini.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -73,11 +76,11 @@ jobs:
           path: dist
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.${{ github.run_number }}
-          name: Albini Chain 1.1.${{ github.run_number }}
+          tag_name: v1.2.${{ github.run_number }}
+          name: Albini Chain 1.2.${{ github.run_number }}
           make_latest: true
           body: |
-            **Windows:** pobierz `AlbiniChain-Setup.exe` i uruchom. Wtyczka trafi do `C:\Program Files\Common Files\VST3`.
+            **Windows:** pobierz `AlbiniChain-Setup.exe` i uruchom. Instaluje dwie wtyczki VST3 (**Albini Chain** i **Stonoga x Albini**) do `C:\Program Files\Common Files\VST3` oraz aplikację **Stonoga x Albini (bez DAW)** w menu Start.
             Windows może ostrzec, że aplikacja jest nieznana (instalator nie jest podpisany) — kliknij „Więcej informacji” → „Uruchom mimo to”.
             Potem w programie muzycznym uruchom ponowne skanowanie wtyczek.
           files: dist/*
