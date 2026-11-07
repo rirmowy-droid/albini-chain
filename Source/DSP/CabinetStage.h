@@ -27,6 +27,9 @@ public:
 
     void setBlend (float blend01) { blend = juce::jlimit (0.0f, 1.0f, blend01); }
 
+    /** Wbudowana kolumna: gitarowa 4x12 albo basowa 8x10. */
+    void setBassVoicing (bool bass) { bassVoicing = bass; }
+
 private:
     juce::dsp::Convolution conv[2];
     std::atomic<bool> loaded[2] { false, false };
@@ -41,4 +44,6 @@ private:
     albini::StereoIIR fbHighPass, fbPeak, fbLowPass1, fbLowPass2;
 
     double sampleRate = 44100.0;
+    bool bassVoicing = false, appliedBassVoicing = false;
+    void applyFallbackVoicing();
 };

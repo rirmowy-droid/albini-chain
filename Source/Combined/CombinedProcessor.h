@@ -2,27 +2,17 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
-#include "../DSP/AmpStage.h"
-#include "../DSP/CabinetStage.h"
-#include "../DSP/SimpleRoom.h"
-#include "../DSP/ConsoleSaturation.h"
-#include "../DSP/TapeEmulation.h"
-#include "../Stonoga/StonogaDSP.h"
-#include "EarGuard.h"
-#include "ChoirStage.h"
-#include "SpaceSmear.h"
-#include "Compressor.h"
+#include "ChainEngine.h"
+#include "AutoMix.h"
 
-/** Stonoga x Albini:
-    Kostka Stonoga (4x) -> Amp -> Cab (2 IR)
-    -> [na przesterze: kompresja -> panorama/pogłos]
-    -> Chór -> Room -> Console -> Tape
-    -> [na całości: kompresja -> panorama/pogłos] -> Output -> Ochrona uszu */
-class CombinedProcessor : public juce::AudioProcessor
+/** Stonoga x Albini 2: kanał studyjny w stylu Albiniego dla gitary, basu,
+    perkusji, wokalu i całego miksu, z kostką Stonoga i auto-miksem. */
+class CombinedProcessor : public juce::AudioProcessor,
+                          private juce::Timer
 {
 public:
     CombinedProcessor();
-    ~CombinedProcessor() override = default;
+    ~CombinedProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -37,7 +27,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 20.0; }
+    double getTailLengthSeconds() const override { return 6.0; }
 
     int getNumPrograms() override;
     int getCurrentProgram() override { return currentProgram; }
@@ -53,15 +43,10 @@ public:
     void clearCabIR (int slot);
     juce::String getCabIRDisplayName (int slot) const;
 
-    // --- opis parametrów dla edytora --------------------------------------
-    static constexpr int kNumPedalParams = 28;
-    static const char* pedalParamId (int i);
-    static constexpr int kNumChainParams = 9;
-    static const char* chainParamId (int i);
-    static const char* chainParamShortName (int i);
-    static constexpr int kNumBusParams = 6;      // 3 na przesterze + 3 na całości
-    static const char* busParamId (int i);
-    static const char* busParamShortName (int i);
+    // --- auto-miks (wątek wiadomości) ---------------------------------------
+    void requestAutoMix();
+    juce::String getAutoMixStatus() const { return autoStatus; }
+    int getSource() const { return (int) std::round (paramValue ("source")); }
 
     juce::AudioProcessorValueTreeState apvts;
 
@@ -69,48 +54,25 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
     static juce::Identifier irProperty (int slot);
     void restoreCabIRsFromState();
-    void processChunk (juce::dsp::AudioBlock<float>& block);
     void setParam (const char* id, float value);
+    float paramValue (const char* id) const;
+    void readSettings (sxa::Settings& s, stonoga::Params& p) const;
+    void timerCallback() override;
+    sxa::MixContext mixContext() const;
 
-    // kostka
-    std::unique_ptr<juce::dsp::Oversampling<float>> pedalOS;
-    stonoga::Engine pedal;
-    juce::AudioBuffer<float> osDry;
-    juce::SmoothedValue<float> pedalMix;
-
-    // łańcuch
-    AmpStage amp;
-    CabinetStage cab;
-    SimpleRoom room;
-    ConsoleSaturation console;
-    TapeEmulation tape;
-    Compressor distComp, busComp;
-    SpaceSmear distSpace, space;
-    ChoirStage choir;
-    juce::dsp::Gain<float> outputGain;
-    EarGuard guard;
-
+    ChainEngine engine;
     int maxBlockSize = 512;
     int currentProgram = 0;
 
-    std::array<std::atomic<float>*, kNumPedalParams> pedalParams {};
-    std::atomic<float>* pPedalOn = nullptr;
-    std::atomic<float>* pAmpInput = nullptr;
-    std::atomic<float>* pAmpDrive = nullptr;
-    std::atomic<float>* pCabBlend = nullptr;
-    std::atomic<float>* pRoomMix = nullptr;
-    std::atomic<float>* pRoomSize = nullptr;
-    std::atomic<float>* pConsole = nullptr;
-    std::atomic<float>* pTape = nullptr;
-    std::atomic<float>* pOutputGain = nullptr;
-    std::atomic<float>* pProtect = nullptr;
-    std::atomic<float>* pSmear = nullptr;
-    std::atomic<float>* pDistComp = nullptr;
-    std::atomic<float>* pDistWidth = nullptr;
-    std::atomic<float>* pDistSmear = nullptr;
-    std::atomic<float>* pBusComp = nullptr;
-    std::atomic<float>* pWidth = nullptr;
-    std::atomic<float>* pChoir = nullptr;
+    std::array<std::atomic<float>*, sxa::kNumParams> params {};
+    std::array<std::atomic<float>*, sxa::kNumPedal> pedalParams {};
+
+    // auto-miks
+    enum class AM { Idle, Listening, WaitingForTracks, ListeningMix };
+    AM amState = AM::Idle;
+    int registrySlot = -1, seenGeneration = 0, amStyle = 0;
+    double amStart = 0.0;
+    juce::String autoStatus { juce::String::fromUTF8 ("Auto-miks: wybierz styl i kliknij") };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CombinedProcessor)
 };

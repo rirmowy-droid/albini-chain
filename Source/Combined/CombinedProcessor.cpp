@@ -1,115 +1,83 @@
 #include "CombinedProcessor.h"
 #include "CombinedEditor.h"
-#include "CombinedPresets.h"
+#include "Presets2.h"
 
 namespace
 {
-    struct PedalDef { const char* id; const char* name; float stonoga::Params::* mem; float lo, hi; };
-
-    // Te same parametry co w Stonoga FX (bez ochrony uszu, która jest na końcu łańcucha).
-    const PedalDef kPedal[CombinedProcessor::kNumPedalParams] = {
-        { "drive",    "Przester",             &stonoga::Params::drive,    0.f, 1.f },
-        { "starve",   "Głód baterii",         &stonoga::Params::starve,   0.f, 1.f },
-        { "gate",     "Rozpad (bramka)",      &stonoga::Params::gate,     0.f, 1.f },
-        { "octave",   "Oktawa",               &stonoga::Params::octave,   0.f, 1.f },
-        { "rust",     "Rdza",                 &stonoga::Params::rust,     0.f, 1.f },
-        { "crackle",  "Trzaski",              &stonoga::Params::crackle,  0.f, 1.f },
-        { "tone",     "Barwa",                &stonoga::Params::tone,     0.f, 1.f },
-        { "mask",     "Maska",                &stonoga::Params::mask,     0.f, 1.f },
-        { "vowel",    "Samogłoska",           &stonoga::Params::vowel,    0.f, 1.f },
-        { "feedback", "Sprzężenie",           &stonoga::Params::feedback, 0.f, 1.f },
-        { "fbtime",   "Czas sprzężenia",      &stonoga::Params::fbTime,   0.f, 1.f },
-        { "howl",     "Wycie",                &stonoga::Params::howl,     0.f, 1.f },
-        { "revfb",    "Pętla pogłosu",        &stonoga::Params::revfb,    0.f, 1.f },
-        { "mix",      "Mix kostki",           &stonoga::Params::mix,      0.f, 1.f },
-        { "reverb",   "Pogłos 1 (śpiew)",     &stonoga::Params::reverb,   0.f, 1.f },
-        { "size",     "Rozmiar 1",            &stonoga::Params::size,     0.f, 1.f },
-        { "sing",     "Śpiew",                &stonoga::Params::sing,     0.f, 1.f },
-        { "choir",    "Chór",                 &stonoga::Params::choir,    0.f, 1.f },
-        { "soft",     "Miękkość",             &stonoga::Params::soft,     0.f, 1.f },
-        { "body",     "Pełnia",               &stonoga::Params::body,     0.f, 1.f },
-        { "swell",    "Mgła",                 &stonoga::Params::swell,    0.f, 1.f },
-        { "chorus",   "Chorus",               &stonoga::Params::chorus,   0.f, 1.f },
-        { "chrate",   "Tempo chorusa",        &stonoga::Params::chRate,   0.f, 1.f },
-        { "rev2",     "Pogłos 2 (jasny)",     &stonoga::Params::rev2,     0.f, 1.f },
-        { "size2",    "Rozmiar 2",            &stonoga::Params::size2,    0.f, 1.f },
-        { "rev3",     "Pogłos 3 (otchłań)",   &stonoga::Params::rev3,     0.f, 1.f },
-        { "size3",    "Rozmiar 3",            &stonoga::Params::size3,    0.f, 1.f },
-        { "output",   "Do wzmacniacza (dB)",  &stonoga::Params::outDb,  -40.f, 6.f },
-    };
-
-    struct ChainDef { const char* id; const char* shortName; };
-    const ChainDef kChain[CombinedProcessor::kNumChainParams] = {
-        { "ampInput",   "Wejście"   },
-        { "ampDrive",   "Drive"     },
-        { "cabBlend",   "Cab A/B"   },
-        { "roomMix",    "Pokój"     },
-        { "roomSize",   "Rozmiar"   },
-        { "console",    "Konsoleta" },
-        { "tape",       "Taśma"     },
-        { "outputGain", "Wyjście"   },
-        { "protect",    "Ochrona uszu" },
-    };
-
-    // [0..2] na przesterze, [3..5] na całości
-    const ChainDef kBus[CombinedProcessor::kNumBusParams] = {
-        { "distComp",  "Kompresja" },
-        { "distWidth", "Panorama"  },
-        { "distSmear", "Pogłos"    },
-        { "busComp",   "Kompresja" },
-        { "width",     "Panorama"  },
-        { "smear",     "Pogłos"    },
-    };
-
     juce::String pl (const char* s) { return juce::String::fromUTF8 (s); }
-}
 
-const char* CombinedProcessor::pedalParamId (int i)        { return kPedal[i].id; }
-const char* CombinedProcessor::chainParamId (int i)        { return kChain[i].id; }
-const char* CombinedProcessor::chainParamShortName (int i) { return kChain[i].shortName; }
-const char* CombinedProcessor::busParamId (int i)          { return kBus[i].id; }
-const char* CombinedProcessor::busParamShortName (int i)   { return kBus[i].shortName; }
+    juce::StringArray names (const char* const* list, int n)
+    {
+        juce::StringArray a;
+        for (int i = 0; i < n; ++i) a.add (pl (list[i]));
+        return a;
+    }
+
+    constexpr double listenSeconds    = 6.0;   // ile sekund grania potrzeba do pomiaru
+    constexpr double listenTimeout    = 14.0;  // potem i tak kończymy
+    constexpr double waitTracksTimeout = 20.0;
+}
 
 juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLayout()
 {
-    using P   = juce::AudioParameterFloat;
     using ID  = juce::ParameterID;
     using Att = juce::AudioParameterFloatAttributes;
     using R   = juce::NormalisableRange<float>;
 
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> v;
+    const auto& d = sxa::kPresets[0];
 
-    const stonoga::Params d = combined::kPresets[0].pedal;
-    for (const auto& def : kPedal)
-        v.push_back (std::make_unique<P> (ID { def.id, 1 }, pl (def.name),
-                                          R (def.lo, def.hi, def.hi > 1.f ? 0.1f : 0.f), d.*(def.mem)));
+    for (const auto& def : sxa::kPedal)
+        v.push_back (std::make_unique<juce::AudioParameterFloat> (ID { def.id, 1 }, pl (def.name),
+                     R (def.lo, def.hi, def.hi > 1.f ? 0.1f : 0.f), d.pedal.*(def.mem)));
 
-    const auto& c   = combined::kPresets[0].chain;
-    const auto db   = Att().withLabel ("dB");
-    const auto pct  = Att().withStringFromValueFunction ([] (float x, int) { return juce::String (juce::roundToInt (x * 100.0f)) + " %"; });
+    const auto pct  = Att().withStringFromValueFunction ([] (float x, int) { return juce::String (juce::roundToInt (x * 100.f)) + " %"; });
+    const auto db   = Att().withStringFromValueFunction ([] (float x, int) { return juce::String (x, 1) + " dB"; });
+    const auto hz   = Att().withStringFromValueFunction ([] (float x, int) { return x < 25.f ? juce::String::fromUTF8 ("wył.") : juce::String (juce::roundToInt (x)) + " Hz"; });
+    const auto panA = Att().withStringFromValueFunction ([] (float x, int)
+    {
+        const int p = juce::roundToInt (x * 100.f);
+        return p == 0 ? juce::String ("C") : (p < 0 ? "L " + juce::String (-p) : "R " + juce::String (p));
+    });
     const auto blnd = Att().withStringFromValueFunction ([] (float x, int)
     {
-        const int b = juce::roundToInt (x * 100.0f);
+        const int b = juce::roundToInt (x * 100.f);
         return "A " + juce::String (100 - b) + " / B " + juce::String (b);
     });
+    const auto rate = Att().withStringFromValueFunction ([] (float x, int) { return juce::String (0.08f + x * x * 2.9f, 2) + " Hz"; });
 
-    v.push_back (std::make_unique<juce::AudioParameterBool> (ID { "pedalOn", 1 }, "Kostka", c.pedalOn));
-    v.push_back (std::make_unique<P> (ID { "ampInput", 1 },   pl ("Wzmacniacz: wejście"), R (-12.f, 24.f, 0.1f), c.ampInput, db));
-    v.push_back (std::make_unique<P> (ID { "ampDrive", 1 },   pl ("Wzmacniacz: drive"),   R (0.f, 1.f), c.ampDrive, pct));
-    v.push_back (std::make_unique<P> (ID { "cabBlend", 1 },   pl ("Kolumna A/B"),         R (0.f, 1.f), c.cabBlend, blnd));
-    v.push_back (std::make_unique<P> (ID { "roomMix", 1 },    pl ("Pokój"),               R (0.f, 0.5f), c.roomMix, pct));
-    v.push_back (std::make_unique<P> (ID { "roomSize", 1 },   pl ("Rozmiar pokoju"),      R (0.f, 1.f), c.roomSize, pct));
-    v.push_back (std::make_unique<P> (ID { "console", 1 },    pl ("Konsoleta"),           R (0.f, 1.f), c.console, pct));
-    v.push_back (std::make_unique<P> (ID { "tape", 1 },       pl ("Taśma"),               R (0.f, 1.f), c.tape, pct));
-    v.push_back (std::make_unique<P> (ID { "distComp", 1 },   pl ("Przester: kompresja"), R (0.f, 1.f), c.distComp, pct));
-    v.push_back (std::make_unique<P> (ID { "distWidth", 1 },  pl ("Przester: panorama"),  R (0.f, 1.f), c.distWidth, pct));
-    v.push_back (std::make_unique<P> (ID { "distSmear", 1 },  pl ("Przester: pogłos"),    R (0.f, 1.f), c.distSmear, pct));
-    v.push_back (std::make_unique<P> (ID { "busComp", 1 },    pl ("Całość: kompresja"),   R (0.f, 1.f), c.busComp, pct));
-    v.push_back (std::make_unique<P> (ID { "width", 1 },      pl ("Całość: panorama"),    R (0.f, 1.f), c.width, pct));
-    v.push_back (std::make_unique<P> (ID { "smear", 1 },      pl ("Całość: pogłos"),      R (0.f, 1.f), c.smear, pct));
-    v.push_back (std::make_unique<P> (ID { "outputGain", 1 }, pl ("Wyjście"),             R (-24.f, 12.f, 0.1f), c.outputGain, db));
-    v.push_back (std::make_unique<P> (ID { "protect", 1 },    pl ("Ochrona uszu"),        R (0.f, 1.f), c.protect, pct));
-
+    for (const auto& def : sxa::kParams)
+    {
+        const float dv = d.s.*(def.mem);
+        const ID id { def.id, 1 };
+        switch (def.kind)
+        {
+            case sxa::Kind::Choice:
+            {
+                juce::StringArray ch;
+                if (juce::String (def.id) == "source") ch = names (sxa::kSourceNames, sxa::NumSources);
+                else if (juce::String (def.id) == "mic") ch = names (sxa::kMicNames, sxa::NumMics);
+                else ch = names (sxa::kStyleNames, sxa::kNumStyles);
+                v.push_back (std::make_unique<juce::AudioParameterChoice> (id, pl (def.name), ch, (int) dv));
+                break;
+            }
+            case sxa::Kind::Toggle:
+                v.push_back (std::make_unique<juce::AudioParameterBool> (id, pl (def.name), dv > 0.5f));
+                break;
+            default:
+            {
+                const auto& att = def.kind == sxa::Kind::Decibel ? db
+                                : def.kind == sxa::Kind::Hertz   ? hz
+                                : def.kind == sxa::Kind::Pan     ? panA
+                                : def.kind == sxa::Kind::Blend   ? blnd
+                                : def.kind == sxa::Kind::Rate    ? rate : pct;
+                R range (def.lo, def.hi, def.kind == sxa::Kind::Decibel ? 0.1f : 0.f);
+                if (def.kind == sxa::Kind::Hertz) range.setSkewForCentre (90.f);
+                v.push_back (std::make_unique<juce::AudioParameterFloat> (id, pl (def.name), range, dv, att));
+                break;
+            }
+        }
+    }
     return { v.begin(), v.end() };
 }
 
@@ -117,30 +85,22 @@ CombinedProcessor::CombinedProcessor()
     : AudioProcessor (BusesProperties()
                           .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "STONOGA_ALBINI", createLayout())
+      apvts (*this, nullptr, "STONOGA_ALBINI_2", createLayout())
 {
-    for (int i = 0; i < kNumPedalParams; ++i)
-        pedalParams[(size_t) i] = apvts.getRawParameterValue (kPedal[i].id);
+    for (int i = 0; i < sxa::kNumParams; ++i) params[(size_t) i] = apvts.getRawParameterValue (sxa::kParams[i].id);
+    for (int i = 0; i < sxa::kNumPedal; ++i)  pedalParams[(size_t) i] = apvts.getRawParameterValue (sxa::kPedal[i].id);
 
-    pPedalOn    = apvts.getRawParameterValue ("pedalOn");
-    pAmpInput   = apvts.getRawParameterValue ("ampInput");
-    pAmpDrive   = apvts.getRawParameterValue ("ampDrive");
-    pCabBlend   = apvts.getRawParameterValue ("cabBlend");
-    pRoomMix    = apvts.getRawParameterValue ("roomMix");
-    pRoomSize   = apvts.getRawParameterValue ("roomSize");
-    pConsole    = apvts.getRawParameterValue ("console");
-    pTape       = apvts.getRawParameterValue ("tape");
-    pOutputGain = apvts.getRawParameterValue ("outputGain");
-    pProtect    = apvts.getRawParameterValue ("protect");
-    pSmear      = apvts.getRawParameterValue ("smear");
-    pWidth      = apvts.getRawParameterValue ("width");
-    pChoir      = apvts.getRawParameterValue ("choir");
-    pDistComp   = apvts.getRawParameterValue ("distComp");
-    pDistWidth  = apvts.getRawParameterValue ("distWidth");
-    pDistSmear  = apvts.getRawParameterValue ("distSmear");
-    pBusComp    = apvts.getRawParameterValue ("busComp");
+    registrySlot = sxa::MixRegistry::get().add();
+    seenGeneration = sxa::MixRegistry::get().currentGeneration();
+    startTimerHz (10);
+}
 
-    pedal.builtInProtection = false;
+CombinedProcessor::~CombinedProcessor()
+{
+    stopTimer();
+    if (amState == AM::Listening)
+        sxa::MixRegistry::get().pendingTracks.fetch_sub (1);
+    sxa::MixRegistry::get().remove (registrySlot);
 }
 
 bool CombinedProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -155,189 +115,198 @@ bool CombinedProcessor::isBusesLayoutSupported (const BusesLayout& layouts) cons
 void CombinedProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     maxBlockSize = juce::jmax (1, samplesPerBlock);
-    const int nch = juce::jmax (1, getTotalNumOutputChannels());
-    const juce::dsp::ProcessSpec spec { sampleRate, (juce::uint32) maxBlockSize, (juce::uint32) nch };
+    engine.prepare (sampleRate, maxBlockSize, juce::jmax (1, getTotalNumOutputChannels()));
+    setLatencySamples (juce::roundToInt (engine.getLatencyInSamples()));
+}
 
-    pedalOS = std::make_unique<juce::dsp::Oversampling<float>> ((size_t) nch, 2,
-        juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
-    pedalOS->initProcessing ((size_t) maxBlockSize);
-    pedal.prepare (sampleRate * 4.0, nch);
-    osDry.setSize (nch, maxBlockSize * 4, false, true, true);
-    pedalMix.reset (sampleRate * 4.0, 0.02);
-    pedalMix.setCurrentAndTargetValue (pPedalOn->load() > 0.5f ? 1.0f : 0.0f);
-
-    amp.prepare (spec);
-    cab.prepare (spec);
-    room.prepare (spec);
-    console.prepare (spec);
-    tape.prepare (spec);
-    choir.prepare (sampleRate);
-    distComp.prepare (sampleRate, Compressor::Mode::Sustain);
-    busComp.prepare (sampleRate, Compressor::Mode::Glue);
-    distSpace.prepare (sampleRate, 2.0f);   // krótszy ogon: przester ma zostać czytelny
-    space.prepare (sampleRate, 3.2f);
-    outputGain.prepare (spec);
-    outputGain.setRampDurationSeconds (0.05);
-    guard.prepare (sampleRate, nch);
-
-    setLatencySamples (juce::roundToInt (pedalOS->getLatencyInSamples()
-                                         + amp.getLatencyInSamples()
-                                         + console.getLatencyInSamples()
-                                         + (float) tape.getLatencyInSamples()));
+void CombinedProcessor::readSettings (sxa::Settings& s, stonoga::Params& p) const
+{
+    for (int i = 0; i < sxa::kNumParams; ++i) s.*(sxa::kParams[i].mem) = params[(size_t) i]->load();
+    p = sxa::cleanPedal();
+    for (int i = 0; i < sxa::kNumPedal; ++i)  p.*(sxa::kPedal[i].mem) = pedalParams[(size_t) i]->load();
 }
 
 void CombinedProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
+    const int numIn = getTotalNumInputChannels(), numOut = getTotalNumOutputChannels();
+    const int n = buffer.getNumSamples();
 
-    const int numIn  = getTotalNumInputChannels();
-    const int numOut = getTotalNumOutputChannels();
-    const int n      = buffer.getNumSamples();
+    if (numIn == 1 && numOut > 1) buffer.copyFrom (1, 0, buffer, 0, 0, n);
+    else for (int c = numIn; c < numOut; ++c) buffer.clear (c, 0, n);
+    if (n == 0) return;
 
-    if (numIn == 1 && numOut > 1)
-        buffer.copyFrom (1, 0, buffer, 0, 0, n);
-    else
-        for (int c = numIn; c < numOut; ++c)
-            buffer.clear (c, 0, n);
-
-    if (pedalOS == nullptr || n == 0)
-        return;
-
-    amp.setGain    (pAmpInput->load());
-    amp.setDrive   (pAmpDrive->load());
-    cab.setBlend   (pCabBlend->load());
-    room.setMix    (pRoomMix->load());
-    room.setSize   (pRoomSize->load());
-    console.setAmount (pConsole->load());
-    tape.setAmount    (pTape->load());
-    outputGain.setGainDecibels (pOutputGain->load());
-    choir.setAmount (pChoir->load());
-    space.setSmear (pSmear->load());
-    space.setWidth (pWidth->load());
-    distComp.setAmount (pDistComp->load());
-    busComp.setAmount (pBusComp->load());
-    distSpace.setSmear (pDistSmear->load());
-    distSpace.setWidth (pDistWidth->load());
-    pedalMix.setTargetValue (pPedalOn->load() > 0.5f ? 1.0f : 0.0f);
+    sxa::Settings s; stonoga::Params p;
+    readSettings (s, p);
 
     juce::dsp::AudioBlock<float> full (buffer);
     full = full.getSubsetChannelBlock (0, (size_t) juce::jmax (1, numOut));
-
-    const auto total = full.getNumSamples();
-    for (size_t pos = 0; pos < total; pos += (size_t) maxBlockSize)
+    for (size_t pos = 0; pos < full.getNumSamples(); pos += (size_t) maxBlockSize)
     {
-        auto chunk = full.getSubBlock (pos, juce::jmin ((size_t) maxBlockSize, total - pos));
-        processChunk (chunk);
+        auto chunk = full.getSubBlock (pos, juce::jmin ((size_t) maxBlockSize, full.getNumSamples() - pos));
+        engine.process (chunk, s, p);
     }
 }
 
-void CombinedProcessor::processChunk (juce::dsp::AudioBlock<float>& block)
-{
-    // --- kostka Stonoga (4x). Silnik pracuje zawsze, więc po włączeniu
-    //     footswitcha ogony pogłosów i sprzężenia są "żywe", jak w trybie trails.
-    stonoga::Params p;
-    for (int i = 0; i < kNumPedalParams; ++i)
-        p.*(kPedal[i].mem) = pedalParams[(size_t) i]->load();
-    p.choir = 0.0f; // stary chór Stonogi (pętla z przesuwaniem wysokości) zastąpiony przez ChoirStage
-
-    auto up = pedalOS->processSamplesUp (block);
-    const auto nUp  = up.getNumSamples();
-    const auto nCh  = juce::jmin (up.getNumChannels(), (size_t) osDry.getNumChannels());
-
-    for (size_t c = 0; c < nCh; ++c)
-        juce::FloatVectorOperations::copy (osDry.getWritePointer ((int) c), up.getChannelPointer (c), (int) nUp);
-
-    std::array<float*, 8> ptrs {};
-    const int engCh = (int) juce::jmin (nCh, ptrs.size());
-    for (int c = 0; c < engCh; ++c)
-        ptrs[(size_t) c] = up.getChannelPointer ((size_t) c);
-    pedal.process (ptrs.data(), engCh, (int) nUp, p);
-
-    if (pedalMix.isSmoothing() || pedalMix.getTargetValue() < 1.0f)
-    {
-        for (size_t i = 0; i < nUp; ++i)
-        {
-            const float m = pedalMix.getNextValue();
-            for (size_t c = 0; c < nCh; ++c)
-            {
-                auto* w = up.getChannelPointer (c);
-                const float dry = osDry.getSample ((int) c, (int) i);
-                w[i] = dry + m * (w[i] - dry);
-            }
-        }
-    }
-
-    pedalOS->processSamplesDown (block);
-
-    // --- łańcuch nagraniowy ----------------------------------------------
-    amp.process (block);
-    cab.process (block);
-
-    // na przesterze
-    distComp.process (block);
-    distSpace.process (block);
-
-    choir.process (block);
-    room.process (block);
-    console.process (block);
-    tape.process (block);
-
-    // na całości
-    busComp.process (block);
-    space.process (block);
-
-    juce::dsp::ProcessContextReplacing<float> ctx (block);
-    outputGain.process (ctx);
-
-    guard.process (block, pProtect->load());
-}
-
 // ---------------------------------------------------------------------------
-// Presety
+// Parametry, presety
 // ---------------------------------------------------------------------------
-int CombinedProcessor::getNumPrograms() { return combined::kNumPresets; }
-
-const juce::String CombinedProcessor::getProgramName (int index)
-{
-    if (index < 0 || index >= combined::kNumPresets)
-        return {};
-    return pl (combined::kPresets[index].name);
-}
-
 void CombinedProcessor::setParam (const char* id, float value)
 {
     if (auto* prm = apvts.getParameter (id))
         prm->setValueNotifyingHost (prm->convertTo0to1 (value));
 }
 
+float CombinedProcessor::paramValue (const char* id) const
+{
+    if (auto* v = apvts.getRawParameterValue (id)) return v->load();
+    return 0.f;
+}
+
+int CombinedProcessor::getNumPrograms() { return sxa::kNumPresets; }
+
+const juce::String CombinedProcessor::getProgramName (int index)
+{
+    if (index < 0 || index >= sxa::kNumPresets) return {};
+    return pl (sxa::kPresets[index].name);
+}
+
 void CombinedProcessor::setCurrentProgram (int index)
 {
-    if (index < 0 || index >= combined::kNumPresets)
-        return;
+    if (index < 0 || index >= sxa::kNumPresets) return;
     currentProgram = index;
+    const auto& pr = sxa::kPresets[index];
+    for (const auto& def : sxa::kPedal) setParam (def.id, pr.pedal.*(def.mem));
+    const float keepStyle = paramValue ("style");
+    for (const auto& def : sxa::kParams) setParam (def.id, pr.s.*(def.mem));
+    setParam ("style", keepStyle);   // styl auto-miksu to ustawienie sesji, nie presetu
+}
 
-    const auto& preset = combined::kPresets[index];
-    const auto& sp = preset.pedal;
-    for (int i = 0; i < kNumPedalParams; ++i)
-        setParam (kPedal[i].id, sp.*(kPedal[i].mem));
+// ---------------------------------------------------------------------------
+// Auto-miks
+// ---------------------------------------------------------------------------
+sxa::MixContext CombinedProcessor::mixContext() const
+{
+    auto& reg = sxa::MixRegistry::get();
+    sxa::MixContext c;
+    int idx = 0;
+    reg.count (registrySlot, sxa::Guitar, c.guitars, idx);
+    c.guitarIndex = idx;
+    c.basses = reg.countSource (sxa::Bass);
+    c.vocals = reg.countSource (sxa::Vocals);
+    return c;
+}
 
-    const auto& c = preset.chain;
-    setParam ("pedalOn",    c.pedalOn ? 1.0f : 0.0f);
-    setParam ("ampInput",   c.ampInput);
-    setParam ("ampDrive",   c.ampDrive);
-    setParam ("cabBlend",   c.cabBlend);
-    setParam ("roomMix",    c.roomMix);
-    setParam ("roomSize",   c.roomSize);
-    setParam ("console",    c.console);
-    setParam ("tape",       c.tape);
-    setParam ("distComp",   c.distComp);
-    setParam ("distWidth",  c.distWidth);
-    setParam ("distSmear",  c.distSmear);
-    setParam ("busComp",    c.busComp);
-    setParam ("width",      c.width);
-    setParam ("smear",      c.smear);
-    setParam ("outputGain", c.outputGain);
-    setParam ("protect",    c.protect);
+void CombinedProcessor::requestAutoMix()
+{
+    sxa::MixRegistry::get().request ((int) std::round (paramValue ("style")));
+}
+
+void CombinedProcessor::timerCallback()
+{
+    auto& reg = sxa::MixRegistry::get();
+    const int source = getSource();
+    reg.setSource (registrySlot, source);
+
+    const double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
+    const int gen = reg.currentGeneration();
+
+    if (gen != seenGeneration)
+    {
+        seenGeneration = gen;
+        amStyle = juce::jlimit (0, sxa::kNumStyles - 1, reg.currentStyle());
+        setParam ("style", (float) amStyle);
+        amStart = now;
+        if (source == sxa::Mix)
+        {
+            amState = AM::WaitingForTracks;
+            autoStatus = pl ("Auto-miks: czekam na ścieżki…");
+        }
+        else
+        {
+            if (amState != AM::Listening) reg.pendingTracks.fetch_add (1);
+            amState = AM::Listening;
+            // najpierw styl (kompresja, sala, taśma zmieniają głośność), potem pomiar
+            sxa::Settings s; stonoga::Params p;
+            readSettings (s, p);
+            sxa::applyTemplate (s, amStyle, mixContext());
+            for (const auto& def : sxa::kParams)
+                if (juce::String (def.id) != "source" && juce::String (def.id) != "style"
+                    && juce::String (def.id) != "autoGain" && juce::String (def.id) != "outputGain")
+                    setParam (def.id, s.*(def.mem));
+            engine.startMeasuring();
+            autoStatus = pl ("Auto-miks: słucham… zagraj fragment utworu");
+        }
+    }
+
+    const double elapsed = now - amStart;
+    const auto ctx = mixContext();
+
+    switch (amState)
+    {
+        case AM::Idle: break;
+
+        case AM::Listening:
+        {
+            if (elapsed < 0.6) { engine.startMeasuring(); break; }   // niech nowe ustawienia się ułożą
+            const double heard = engine.getMeasuredSeconds();
+            autoStatus = pl ("Auto-miks: słucham… ") + juce::String (juce::jmin (heard, listenSeconds), 1) + " / " + juce::String (listenSeconds, 0) + " s";
+            if (heard >= listenSeconds || elapsed >= listenTimeout)
+            {
+                engine.stopMeasuring();
+                juce::String gainText;
+                if (heard > 1.0)
+                {
+                    const float gain = juce::jlimit (-24.f, 24.f, sxa::targetDb (amStyle, source, ctx) - engine.getMeasuredDb() - paramValue ("outputGain"));
+                    setParam ("autoGain", gain);
+                    gainText = ", " + juce::String (gain, 1) + " dB";
+                }
+                else gainText = pl (", cisza – głośność bez zmian");
+
+                reg.pendingTracks.fetch_sub (1);
+                amState = AM::Idle;
+                autoStatus = pl ("Auto-miks: gotowe (") + pl (sxa::kSourceNames[source]) + gainText + ")";
+            }
+            break;
+        }
+
+        case AM::WaitingForTracks:
+            if ((elapsed > 1.0 && reg.pendingTracks.load() <= 0) || elapsed > waitTracksTimeout)
+            {
+                sxa::Settings s; stonoga::Params p;
+                readSettings (s, p);
+                sxa::applyTemplate (s, amStyle, ctx);
+                for (const char* id : { "busComp", "width", "smear", "console", "tape", "tilt", "roomMix", "lowCut" })
+                    for (const auto& def : sxa::kParams)
+                        if (juce::String (def.id) == id) setParam (id, s.*(def.mem));
+                setParam ("autoGain", 0.f);
+                engine.startMeasuring();
+                amState = AM::ListeningMix;
+                amStart = now;
+                autoStatus = pl ("Auto-miks: ścieżki gotowe, słucham całości…");
+            }
+            break;
+
+        case AM::ListeningMix:
+        {
+            const double heard = engine.getMeasuredSeconds();
+            if (elapsed < 0.6) { engine.startMeasuring(); break; }   // niech zmiany na ścieżkach się ułożą
+            autoStatus = pl ("Auto-miks: słucham całości… ") + juce::String (juce::jmin (heard, listenSeconds), 1) + " s";
+            if (heard >= listenSeconds || elapsed >= listenTimeout)
+            {
+                engine.stopMeasuring();
+                if (heard > 1.0)
+                {
+                    const float gain = juce::jlimit (-24.f, 24.f, sxa::targetDb (amStyle, sxa::Mix, ctx) - engine.getMeasuredDb() - paramValue ("outputGain"));
+                    setParam ("autoGain", gain);
+                }
+                const int tracks = ctx.guitars + ctx.basses + ctx.vocals + reg.countSource (sxa::Drums);
+                amState = AM::Idle;
+                autoStatus = pl ("Auto-miks: gotowe – ") + juce::String (tracks) + pl (" ścieżek, styl: ") + pl (sxa::kStyleNames[amStyle]);
+            }
+            break;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -351,25 +320,23 @@ juce::Identifier CombinedProcessor::irProperty (int slot)
 
 bool CombinedProcessor::loadCabIR (int slot, const juce::File& file)
 {
-    if (! cab.loadIR (slot, file))
-        return false;
+    if (! engine.cabinet().loadIR (slot, file)) return false;
     apvts.state.setProperty (irProperty (slot), file.getFullPathName(), nullptr);
     return true;
 }
 
 void CombinedProcessor::clearCabIR (int slot)
 {
-    cab.clearIR (slot);
+    engine.cabinet().clearIR (slot);
     apvts.state.setProperty (irProperty (slot), juce::String(), nullptr);
 }
 
 juce::String CombinedProcessor::getCabIRDisplayName (int slot) const
 {
     const auto path = apvts.state.getProperty (irProperty (slot)).toString();
-    if (path.isEmpty())
-        return pl ("(brak – wbudowana kolumna)");
+    if (path.isEmpty()) return pl ("(brak – wbudowana kolumna)");
     const juce::File f (path);
-    return cab.hasIR (slot) ? f.getFileName() : pl ("brak pliku: ") + f.getFileName();
+    return const_cast<ChainEngine&> (engine).cabinet().hasIR (slot) ? f.getFileName() : pl ("brak pliku: ") + f.getFileName();
 }
 
 void CombinedProcessor::restoreCabIRsFromState()
@@ -377,10 +344,8 @@ void CombinedProcessor::restoreCabIRsFromState()
     for (int slot = 0; slot < 2; ++slot)
     {
         const auto path = apvts.state.getProperty (irProperty (slot)).toString();
-        if (path.isNotEmpty() && juce::File (path).existsAsFile())
-            cab.loadIR (slot, juce::File (path));
-        else
-            cab.clearIR (slot);
+        if (path.isNotEmpty() && juce::File (path).existsAsFile()) engine.cabinet().loadIR (slot, juce::File (path));
+        else engine.cabinet().clearIR (slot);
     }
 }
 
@@ -389,8 +354,7 @@ juce::AudioProcessorEditor* CombinedProcessor::createEditor() { return new Combi
 
 void CombinedProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    if (auto xml = apvts.copyState().createXml())
-        copyXmlToBinary (*xml, destData);
+    if (auto xml = apvts.copyState().createXml()) copyXmlToBinary (*xml, destData);
 }
 
 void CombinedProcessor::setStateInformation (const void* data, int sizeInBytes)

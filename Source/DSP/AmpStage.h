@@ -17,6 +17,8 @@ public:
 
     void setGain (float gainDb);
     void setDrive (float drive); // 0..1
+    /** true: sygnał przechodzi tylko przez oversampling (ta sama latencja, bez wzmacniacza). */
+    void setPassThrough (bool p) { passThrough = p; }
 
     float getLatencyInSamples() const;
 
@@ -24,6 +26,7 @@ private:
     void updateBrightShelf (float drive);
 
     double sampleRate = 44100.0;
+    bool passThrough = false;
 
     juce::dsp::Gain<float> inputGain;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;

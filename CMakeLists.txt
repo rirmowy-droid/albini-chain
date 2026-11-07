@@ -85,7 +85,7 @@ target_sources(AlbiniChain
 albini_configure(AlbiniChain)
 
 # ---------------------------------------------------------------------------
-# 2) Stonoga x Albini - kostka Stonoga + lancuch Albini w jednej wtyczce
+# 2) Stonoga x Albini - kanal studyjny (gitara, bas, perkusja, wokal, miks) + kostka Stonoga + auto-miks
 # ---------------------------------------------------------------------------
 juce_add_plugin(StonogaAlbini
     COMPANY_NAME                "Custom"
@@ -106,6 +106,7 @@ target_sources(StonogaAlbini
     PRIVATE
         Source/Combined/CombinedProcessor.cpp
         Source/Combined/CombinedEditor.cpp
+        Source/Combined/ChainEngine.cpp
         ${ALBINI_DSP_SOURCES})
 
 albini_configure(StonogaAlbini)

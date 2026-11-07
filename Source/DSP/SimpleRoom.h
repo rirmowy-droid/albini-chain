@@ -18,6 +18,11 @@ public:
     void setMix (float mix)   { mixSmoothed.setTargetValue (juce::jlimit (0.0f, 1.0f, mix)); }
     void setSize (float size) { sizeTarget = juce::jlimit (0.0f, 1.0f, size); sizeSmoothed.setTargetValue (sizeTarget); }
 
+    /** Zgniecenie mikrofonów sali (mocna kompresja samego pogłosu sali, jak przy bębnach). */
+    void setCrush (float c)   { crush = juce::jlimit (0.0f, 1.0f, c); }
+    /** Dolna granica sygnału, który trafia do sali (bębny niżej, wokal wyżej). */
+    void setInputHighpass (float hz) { inputHpHz = juce::jlimit (20.0f, 1000.0f, hz); }
+
     static constexpr double maxTailSeconds = 2.0;
 
 private:
@@ -58,4 +63,6 @@ private:
 
     juce::SmoothedValue<float> mixSmoothed { 0.12f }, sizeSmoothed { 0.35f };
     float sizeTarget = 0.35f, lastDecaySize = -1.0f;
+    float crush = 0.0f, crushEnv = 0.0f;
+    float inputHpHz = 180.0f, lastInputHpHz = -1.0f;
 };

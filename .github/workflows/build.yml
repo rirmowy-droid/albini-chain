@@ -52,7 +52,7 @@ jobs:
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress }
-          $env:APPVER = "1.4.${{ github.run_number }}"
+          $env:APPVER = "2.0.${{ github.run_number }}"
           & $iscc installer\albini.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -76,8 +76,8 @@ jobs:
           path: dist
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.${{ github.run_number }}
-          name: Albini Chain 1.4.${{ github.run_number }}
+          tag_name: v2.0.${{ github.run_number }}
+          name: Albini Chain 2.0.${{ github.run_number }}
           make_latest: true
           body: |
             **Windows:** pobierz `AlbiniChain-Setup.exe` i uruchom. Instaluje dwie wtyczki VST3 (**Albini Chain** i **Stonoga x Albini**) do `C:\Program Files\Common Files\VST3` oraz aplikację **Stonoga x Albini (bez DAW)** w menu Start.

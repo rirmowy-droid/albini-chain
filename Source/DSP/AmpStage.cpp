@@ -74,6 +74,13 @@ void AmpStage::process (juce::dsp::AudioBlock<float>& block)
     const auto numCh = juce::jmin (block.getNumChannels(), couplingHP.size());
     const auto n     = block.getNumSamples();
 
+    if (passThrough)
+    {
+        oversampling->processSamplesUp (block);
+        oversampling->processSamplesDown (block);
+        return;
+    }
+
     juce::dsp::ProcessContextReplacing<float> ctx (block);
     inputGain.process (ctx);
 

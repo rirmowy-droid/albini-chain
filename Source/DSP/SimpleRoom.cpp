@@ -31,6 +31,7 @@ void SimpleRoom::prepare (const juce::dsp::ProcessSpec& spec)
     mixSmoothed.reset (sampleRate, 0.05);
     sizeSmoothed.reset (sampleRate, 0.25);   // slow: size moves bend pitch slightly, no clicks
     lastDecaySize = -1.0f;
+    lastInputHpHz = -1.0f;
     updateDecay (sizeTarget);
     reset();
 }
@@ -74,6 +75,15 @@ void SimpleRoom::process (juce::dsp::AudioBlock<float>& block)
         return; // fully dry: let the tail die without costing CPU
 
     updateDecay (sizeTarget);
+    if (inputHpHz != lastInputHpHz)
+    {
+        inputHP.setCutoff (sampleRate, inputHpHz);
+        lastInputHpHz = inputHpHz;
+    }
+    const float crushAtk = 1.0f - std::exp (-1.0f / (0.002f * (float) sampleRate));
+    const float crushRel = 1.0f - std::exp (-1.0f / (0.08f * (float) sampleRate));
+    const float crushRatio = 1.0f + 9.0f * crush;
+    const float crushMakeup = 1.0f + 5.0f * crush;
 
     const float msToS = (float) (0.001 * sampleRate);
     auto* left  = block.getChannelPointer (0);
@@ -125,8 +135,19 @@ void SimpleRoom::process (juce::dsp::AudioBlock<float>& block)
         const float lateL = 0.6f * (o[0] - o[2]);
         const float lateR = 0.6f * (o[1] - o[3]);
 
-        const float wetL = 0.55f * erL + lateL;
-        const float wetR = 0.55f * erR + lateR;
+        float wetL = 0.55f * erL + lateL;
+        float wetR = 0.55f * erR + lateR;
+
+        if (crush > 0.001f)
+        {
+            const float a = std::max (std::abs (wetL), std::abs (wetR));
+            crushEnv += (a > crushEnv ? crushAtk : crushRel) * (a - crushEnv);
+            const float thr = 0.03f;
+            const float g = crushEnv > thr ? std::pow (thr / crushEnv, 1.0f - 1.0f / crushRatio) : 1.0f;
+            const float k = 1.0f + crush * (g * crushMakeup - 1.0f);
+            wetL *= k;
+            wetR *= k;
+        }
 
         left[i] = dryL + mix * wetL;
         if (right)

@@ -17,11 +17,37 @@ void CabinetStage::prepare (const juce::dsp::ProcessSpec& spec)
     *fbPeak.state     = *Coeffs::makePeakFilter (sampleRate, 2400.0f, 1.1f, juce::Decibels::decibelsToGain (3.5f));
     *fbLowPass1.state = *Coeffs::makeLowPass (sampleRate, 5200.0f, 0.75f);
     *fbLowPass2.state = *Coeffs::makeLowPass (sampleRate, 6500.0f, 0.6f);
+    appliedBassVoicing = ! bassVoicing;
+    applyFallbackVoicing();
 
     for (auto* f : { &fbHighPass, &fbPeak, &fbLowPass1, &fbLowPass2 })
         f->prepare (spec);
 
     reset();
+}
+
+void CabinetStage::applyFallbackVoicing()
+{
+    if (appliedBassVoicing == bassVoicing)
+        return;
+    appliedBassVoicing = bassVoicing;
+
+    using AC = juce::dsp::IIR::ArrayCoefficients<float>;
+    const auto db = [] (float d) { return juce::Decibels::decibelsToGain (d); };
+    if (bassVoicing)
+    {
+        *fbHighPass.state = AC::makeHighPass (sampleRate, 35.0f, 0.7f);
+        *fbPeak.state     = AC::makePeakFilter (sampleRate, 700.0f, 0.9f, db (3.0f));   // warkot
+        *fbLowPass1.state = AC::makeLowPass (sampleRate, 3800.0f, 0.7f);
+        *fbLowPass2.state = AC::makeLowPass (sampleRate, 5000.0f, 0.6f);
+    }
+    else
+    {
+        *fbHighPass.state = AC::makeHighPass (sampleRate, 75.0f, 0.8f);
+        *fbPeak.state     = AC::makePeakFilter (sampleRate, 2400.0f, 1.1f, db (3.5f));
+        *fbLowPass1.state = AC::makeLowPass (sampleRate, 5200.0f, 0.75f);
+        *fbLowPass2.state = AC::makeLowPass (sampleRate, 6500.0f, 0.6f);
+    }
 }
 
 void CabinetStage::reset()
@@ -72,6 +98,7 @@ void CabinetStage::process (juce::dsp::AudioBlock<float>& block)
 
     if (! a && ! b)
     {
+        applyFallbackVoicing();
         fbHighPass.process (ctx);
         fbPeak.process (ctx);
         fbLowPass1.process (ctx);

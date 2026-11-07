@@ -2,7 +2,7 @@
 #define AppName "Albini Chain"
 #define AppVer GetEnv("APPVER")
 #if AppVer == ""
-  #define AppVer "1.2.0"
+  #define AppVer "2.0.0"
 #endif
 #define Art "..\build"
 #define AlbiniVst3 Art + "\AlbiniChain_artefacts\Release\VST3\Albini Chain.vst3"

@@ -13,20 +13,37 @@ Instalator wgrywa:
 
 W DAW zrób ponowne skanowanie wtyczek.
 
-## Stonoga x Albini
+## Stonoga x Albini 2
 
-**Kostka Stonoga → Amp → Cab (2 IR) → [na przesterze: Kompresja → Panorama/Pogłos] → Chór → Room → Console → Tape → [na całości: Kompresja → Panorama/Pogłos] → Wyjście → Ochrona uszu**
+Kanał studyjny w stylu Albiniego dla **gitary, basu, perkusji, wokalu i całego miksu**, z kostką Stonoga i auto-miksem.
 
-- Góra: wszystkie gałki [Stonoga FX](https://github.com/rirmowy-droid/stonoga-fx); „Do wzmacniacza” ustala, jak mocno kostka uderza we wzmacniacz.
-- Footswitch **KOSTKA: WŁ/WYŁ** – płynne przełączenie; silnik kostki pracuje cały czas, więc ogony pogłosów i sprzężenia zostają (tryb „trails”).
-- Dół: łańcuch Albini + **Ochrona uszu** na samym końcu (przyciemnia pisk, ścisza długo za głośny dźwięk, limiter −1 dB).
-- Dwa zestawy po trzy gałki: **na przesterze** i **na całości**:
-  - **Kompresja** – na przesterze szybka (wyrównuje i wydłuża wybrzmienie), na całości wolna i łagodna (skleja przester, chór i pogłosy). Na 0 wyłączona.
-  - **Panorama** – „podwójne nagranie” (osobno pływająca kopia na lewo i prawo) + poszerzenie M/S.
-  - **Pogłos** – rozpraszacze + gęsty, modulowany pogłos (na przesterze krótszy, 2 s; na całości 3,2 s).
-- Okno można powiększać i zmniejszać (przeciągnij prawy dolny róg).
-- **Chór** (nowy): 6 głosów (oktawa w dół, unison, kwinty, cicha oktawa w górę) z wibrato, płynące samogłoski a/o/u i ciemny pogłos. Bez pętli zwrotnej, więc nie narasta w pisk.
-- 10 presetów opartych na mocnym przesterze, wyrównanych głośnością: Ściana, Mięso w drewnianym pokoju, Gęsty fuzz na taśmie, Ciepły crunch, Shoegaze, Rozlana katedra, Chór nad ścianą, Anielski chór, Maska nō, Albini bez kostki.
+**Tor:** [gitara/bas: kostka → wzmacniacz → kolumna (2 IR), bas + czysty dół z linii] → barwa (mikrofon, źródło) →
+**na źródle:** kompresja → chorus → panorama (dwa podejścia) → pogłos → **studio:** sala (+ zgniecenie) → konsoleta → taśma →
+**na całości:** kompresja → panorama M/S → pogłos → głośność, pan → ochrona uszu
+
+- **Źródło**: Gitara, Bas, Perkusja, Wokal, Cały miks. Każde ma własne brzmienie bazowe; kostka i wzmacniacz działają przy gitarze i basie.
+- **Mikrofon**: dynamiczny (prezencja), wstęgowy (ciemno, gładko), pojemnościowy (powietrze, pełnia).
+- **Chorus**: 6 głosów rozłożonych od lewej do prawej, każdy z własnym tempem i dryfem; dół (< 180 Hz) zostaje w środku.
+- **Panorama źródła**: dwa nagrane podejścia – lewo oryginał, prawo drugie podejście; **Rozjazd** = jak bardzo się różnią.
+- **Pogłos źródła** z regulowaną **długością** (ok. 0,8–5,6 s), osobny od pogłosu całości.
+- **Sala** z **zgnieceniem** (mocno skompresowane mikrofony sali, klasyka bębnów), **barwa** ciemno/jasno, **obcięcie dołu**, **miejsce na wokal**.
+
+### Auto-miks
+Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę (źródło „Cały miks”). Wybierz styl i kliknij **AUTO-MIKS** w dowolnej kopii, a potem zagraj ~6 s utworu:
+ścieżki ustawiają studio wg stylu, głośność względem bębnów, gitary rozstawiają się na boki, gitary dostają obcięcie dołu pod bas i miejsce na wokal; suma czeka na ścieżki, mierzy całość i ustawia głośność końcową.
+
+Style (inspirowane brzmieniem płyt grunge’owych początku lat 90.):
+- **Seattle '91** – jasno i zbito (zwarte bębny, gitary szeroko, wokal z przodu)
+- **Chicago bez litości** – surowo, dużo sali, mało kompresji (styl Albiniego)
+- **Ciepła sala** – przestrzeń i pogłos, cieplej
+- **Smoła** – ciemno, ciężko, chorus na gitarach, podwójne głosy
+- **Czarne słońce** – gęsto i szeroko, ciężkie gitary
+
+Działa, gdy program muzyczny trzyma wtyczki w jednym procesie (domyślnie: FL Studio, Reaper, Ableton, Cubase). W aplikacji bez DAW auto-miks ustawia jedno źródło.
+
+**Presety:** 21 – gitara (np. „Garaż w Aberdeen”, „Ściana flaneli”, „Mokry chorus z Seattle”, „Smoła”, „Czarne słońce”), bas, perkusja, wokal i suma.
+
+Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/Later/`).
 
 ## Build
 

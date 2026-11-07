@@ -3,25 +3,30 @@
 #include <juce_dsp/juce_dsp.h>
 #include "../Stonoga/StonogaDSP.h"
 
-/** Przestrzeń na końcu łańcucha.
+/** Przestrzeń: panorama + pogłos. Dwa tryby:
 
-    Używany dwa razy: na samym przesterze (krótszy ogon) i na całości.
+    DoubleTrack (na źródle / przesterze) - panorama jak dwa nagrane podejścia:
+      lewy kanał = oryginał, prawy = drugie „podejście” (opóźnione, pływające
+      w czasie, trochę ciemniejsze). „Rozjazd” ustala, jak bardzo te podejścia
+      się różnią - od równego dubla po luźne, żywe granie.
 
-    Panorama (szerokość): „podwójne nagranie” - lewy i prawy kanał dostają osobno
-    opóźnioną i lekko pływającą kopię (jak dwie zagrane ścieżki), plus
-    poszerzenie M/S.
-    Pogłos (rozmycie): rozpraszacze (allpassy) + długi, gęsty, modulowany pogłos,
-    które rozlewają ścianę przesteru w przestrzeni. */
+    Widen (na całości) - poszerzenie M/S tylko powyżej ~150 Hz (dół zostaje
+      w środku), bez dubla, więc nie psuje całego miksu.
+
+    Pogłos: rozpraszacze + gęsty, modulowany pogłos o regulowanej długości. */
 class SpaceSmear
 {
 public:
-    void prepare (double sampleRate, float tailSeconds = 3.2f)
+    enum class Mode { DoubleTrack, Widen };
+
+    void prepare (double sampleRate, Mode m)
     {
         sr = (float) sampleRate;
+        mode = m;
         static const float apMs[2][4] = { { 4.1f, 7.7f, 11.3f, 17.9f }, { 4.7f, 8.3f, 12.9f, 19.1f } };
         for (int s = 0; s < 2; ++s)
         {
-            dbl[s].init ((size_t) (0.03f * sr) + 8);
+            dbl[s].init ((size_t) (0.045f * sr) + 8);
             for (int k = 0; k < 4; ++k)
             {
                 apLen[s][k] = apMs[s][k] * 0.001f * sr;
@@ -30,14 +35,13 @@ public:
             hp[s].highpass (sr, 160.f, 0.7f);
             rv[s].init (sr);
             for (int k = 0; k < 8; ++k)
-            {
                 rv[s].len[k] = stonoga::kLen[k] * 1.25f * 0.001f * sr + (float) s * 0.0023f * sr;
-                rv[s].g[k]   = std::pow (10.f, -3.f * rv[s].len[k] / (tailSeconds * sr));
-            }
         }
+        sideHp.highpass (sr, 150.f, 0.7f);
         damp = 1.f - std::exp (-2.f * stonoga::kPi * 5200.f / sr);
         smear.reset (sampleRate, 0.1);
         width.reset (sampleRate, 0.1);
+        lastSize = -1.f;
         reset();
     }
 
@@ -45,78 +49,103 @@ public:
     {
         for (int s = 0; s < 2; ++s)
         {
-            dbl[s].clear(); rv[s].clear(); hp[s].reset();
+            dbl[s].clear(); rv[s].clear(); hp[s].reset(); tone[s] = 0.f;
             for (auto& a : ap[s]) a.clear();
-            drift[s] = driftT[s] = 0.f;
         }
-        lfo = 0.f; counter = 0;
+        sideHp.reset();
+        drift = driftT = 0.f; lfo = 0.f; counter = 0;
     }
 
-    void setSmear (float v) { smear.setTargetValue (stonoga::clampf (v, 0.f, 1.f)); }
-    void setWidth (float v) { width.setTargetValue (stonoga::clampf (v, 0.f, 1.f)); }
+    void set (float smear01, float width01, float loose01, float size01)
+    {
+        smear.setTargetValue (stonoga::clampf (smear01, 0.f, 1.f));
+        width.setTargetValue (stonoga::clampf (width01, 0.f, 1.f));
+        loose = stonoga::clampf (loose01, 0.f, 1.f);
+        size  = stonoga::clampf (size01, 0.f, 1.f);
+    }
 
     void process (juce::dsp::AudioBlock<float>& block)
     {
         if (block.getNumChannels() < 2)
-            return; // szerokość i rozmycie mają sens tylko w stereo
-
+            return;
         if (! smear.isSmoothing() && ! width.isSmoothing()
             && smear.getTargetValue() <= 0.0001f && width.getTargetValue() <= 0.0001f)
             return;
 
+        updateTail();
         float* io[2] = { block.getChannelPointer (0), block.getChannelPointer (1) };
-        const float baseMs[2] = { 11.0f, 16.5f };
         const float msS = 0.001f * sr;
+        const float toneC = 1.f - std::exp (-2.f * stonoga::kPi * (12000.f - 5000.f * loose) / sr);
 
         for (size_t i = 0; i < block.getNumSamples(); ++i)
         {
             const float sm = smear.getNextValue();
             const float w  = width.getNextValue();
+            float l = io[0][i], r = io[1][i];
 
-            if ((counter++ % 4096) == 0)
-                for (int s = 0; s < 2; ++s) driftT[s] = random.nextFloat() * 2.f - 1.f;
-            lfo += 2.f * stonoga::kPi * 0.21f / sr; if (lfo > 2.f * stonoga::kPi) lfo -= 2.f * stonoga::kPi;
-
-            float o[2];
-            for (int s = 0; s < 2; ++s)
+            if (mode == Mode::DoubleTrack && w > 0.0001f)
             {
-                const float x = io[s][i];
-                drift[s] += (driftT[s] - drift[s]) * 0.0002f;
+                if ((counter++ % 3000) == 0) driftT = random.nextFloat() * 2.f - 1.f;
+                drift += (driftT - drift) * (0.00008f + 0.0004f * loose);
+                lfo += 2.f * stonoga::kPi * 0.17f / sr; if (lfo > 2.f * stonoga::kPi) lfo -= 2.f * stonoga::kPi;
 
-                // podwójne nagranie
-                dbl[s].push (x);
-                const float mod = 0.9f * drift[s] + 0.35f * std::sin (lfo + (float) s * 1.9f);
-                const float d = dbl[s].tap ((baseMs[s] + mod) * msS);
-                float y = x * (1.f - 0.2f * w) + d * 0.65f * w;
+                // drugie podejście: 12-20 ms później, pływa w czasie, trochę ciemniejsze
+                const float dMs = 12.f + 4.f * loose + loose * (6.f * drift + 1.2f * std::sin (lfo));
+                dbl[0].push (l); dbl[1].push (r);
+                float takeB = dbl[1].tap (dMs * msS);
+                tone[1] += toneC * (takeB - tone[1]);
+                takeB = tone[1];
 
-                // rozmycie
-                if (sm > 0.0001f)
+                // lewo: oryginał, prawo: przechodzi w drugie podejście
+                const float rr = r * (1.f - w) + takeB * w;
+                const float ll = l * (1.f + 0.15f * w);
+                l = ll; r = rr * (1.f + 0.15f * w);
+            }
+            else if (mode == Mode::Widen && w > 0.0001f)
+            {
+                const float m = 0.5f * (l + r);
+                float sd = 0.5f * (l - r);
+                sd += 1.2f * w * sideHp.process (sd);
+                l = m + sd; r = m - sd;
+            }
+
+            if (sm > 0.0001f)
+            {
+                float in[2] = { l, r };
+                for (int s = 0; s < 2; ++s)
                 {
-                    float diff = hp[s].process (y);
+                    float diff = hp[s].process (in[s]);
                     for (int k = 0; k < 4; ++k)
                         diff = stonoga::allpass (ap[s][k], diff, apLen[s][k], 0.62f);
                     const float tail = stonoga::reverbTick (rv[s], diff * 0.5f, damp, 0.f, 1.f);
                     const float wet = 0.45f * diff + 1.3f * tail;
-                    y = y * (1.f - 0.3f * sm) + sm * wet;
+                    in[s] = in[s] * (1.f - 0.3f * sm) + sm * wet;
                 }
-                o[s] = y;
+                l = in[0]; r = in[1];
             }
 
-            // M/S
-            const float m = 0.5f * (o[0] + o[1]);
-            const float sd = 0.5f * (o[0] - o[1]) * (1.f + 0.8f * w);
-            io[0][i] = m + sd;
-            io[1][i] = m - sd;
+            io[0][i] = l; io[1][i] = r;
         }
     }
 
 private:
+    void updateTail()
+    {
+        if (std::abs (size - lastSize) < 0.005f) return;
+        lastSize = size;
+        const float t60 = 0.8f + 4.2f * size * size + 0.6f * size;     // ~0,8 .. 5,6 s
+        for (int s = 0; s < 2; ++s)
+            for (int k = 0; k < 8; ++k)
+                rv[s].g[k] = std::pow (10.f, -3.f * rv[s].len[k] / (t60 * sr));
+    }
+
     float sr = 48000.f, damp = 0.5f, lfo = 0.f;
+    Mode mode = Mode::DoubleTrack;
     stonoga::Delay dbl[2], ap[2][4];
-    float apLen[2][4] {};
-    stonoga::Biquad hp[2];
+    float apLen[2][4] {}, tone[2] {};
+    stonoga::Biquad hp[2], sideHp;
     stonoga::Reverb rv[2];
-    float drift[2] {}, driftT[2] {};
+    float drift = 0, driftT = 0, loose = 0.3f, size = 0.45f, lastSize = -1.f;
     unsigned counter = 0;
     juce::Random random { 0x5EAD };
     juce::SmoothedValue<float> smear { 0.f }, width { 0.f };
