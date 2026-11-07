@@ -47,6 +47,8 @@ namespace
         { "roomSize",   "Rozmiar"   },
         { "console",    "Konsoleta" },
         { "tape",       "Taśma"     },
+        { "smear",      "Rozmycie"  },
+        { "width",      "Szerokość" },
         { "outputGain", "Wyjście"   },
         { "protect",    "Ochrona uszu" },
     };
@@ -67,7 +69,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
 
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> v;
 
-    const stonoga::Params d = stonoga::kPresets[combined::kPresets[0].stonogaPreset].p;
+    const stonoga::Params d = combined::kPresets[0].pedal;
     for (const auto& def : kPedal)
         v.push_back (std::make_unique<P> (ID { def.id, 1 }, pl (def.name),
                                           R (def.lo, def.hi, def.hi > 1.f ? 0.1f : 0.f), d.*(def.mem)));
@@ -89,6 +91,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
     v.push_back (std::make_unique<P> (ID { "roomSize", 1 },   pl ("Rozmiar pokoju"),      R (0.f, 1.f), c.roomSize, pct));
     v.push_back (std::make_unique<P> (ID { "console", 1 },    pl ("Konsoleta"),           R (0.f, 1.f), c.console, pct));
     v.push_back (std::make_unique<P> (ID { "tape", 1 },       pl ("Taśma"),               R (0.f, 1.f), c.tape, pct));
+    v.push_back (std::make_unique<P> (ID { "smear", 1 },      pl ("Rozmycie"),            R (0.f, 1.f), c.smear, pct));
+    v.push_back (std::make_unique<P> (ID { "width", 1 },      pl ("Szerokość"),           R (0.f, 1.f), c.width, pct));
     v.push_back (std::make_unique<P> (ID { "outputGain", 1 }, pl ("Wyjście"),             R (-24.f, 12.f, 0.1f), c.outputGain, db));
     v.push_back (std::make_unique<P> (ID { "protect", 1 },    pl ("Ochrona uszu"),        R (0.f, 1.f), c.protect, pct));
 
@@ -114,6 +118,9 @@ CombinedProcessor::CombinedProcessor()
     pTape       = apvts.getRawParameterValue ("tape");
     pOutputGain = apvts.getRawParameterValue ("outputGain");
     pProtect    = apvts.getRawParameterValue ("protect");
+    pSmear      = apvts.getRawParameterValue ("smear");
+    pWidth      = apvts.getRawParameterValue ("width");
+    pChoir      = apvts.getRawParameterValue ("choir");
 
     pedal.builtInProtection = false;
 }
@@ -146,6 +153,8 @@ void CombinedProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     room.prepare (spec);
     console.prepare (spec);
     tape.prepare (spec);
+    choir.prepare (sampleRate);
+    space.prepare (sampleRate);
     outputGain.prepare (spec);
     outputGain.setRampDurationSeconds (0.05);
     guard.prepare (sampleRate, nch);
@@ -181,6 +190,9 @@ void CombinedProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     console.setAmount (pConsole->load());
     tape.setAmount    (pTape->load());
     outputGain.setGainDecibels (pOutputGain->load());
+    choir.setAmount (pChoir->load());
+    space.setSmear (pSmear->load());
+    space.setWidth (pWidth->load());
     pedalMix.setTargetValue (pPedalOn->load() > 0.5f ? 1.0f : 0.0f);
 
     juce::dsp::AudioBlock<float> full (buffer);
@@ -201,6 +213,7 @@ void CombinedProcessor::processChunk (juce::dsp::AudioBlock<float>& block)
     stonoga::Params p;
     for (int i = 0; i < kNumPedalParams; ++i)
         p.*(kPedal[i].mem) = pedalParams[(size_t) i]->load();
+    p.choir = 0.0f; // stary chór Stonogi (pętla z przesuwaniem wysokości) zastąpiony przez ChoirStage
 
     auto up = pedalOS->processSamplesUp (block);
     const auto nUp  = up.getNumSamples();
@@ -234,9 +247,11 @@ void CombinedProcessor::processChunk (juce::dsp::AudioBlock<float>& block)
     // --- łańcuch nagraniowy ----------------------------------------------
     amp.process (block);
     cab.process (block);
+    choir.process (block);
     room.process (block);
     console.process (block);
     tape.process (block);
+    space.process (block);
 
     juce::dsp::ProcessContextReplacing<float> ctx (block);
     outputGain.process (ctx);
@@ -269,7 +284,7 @@ void CombinedProcessor::setCurrentProgram (int index)
     currentProgram = index;
 
     const auto& preset = combined::kPresets[index];
-    const auto& sp = stonoga::kPresets[preset.stonogaPreset].p;
+    const auto& sp = preset.pedal;
     for (int i = 0; i < kNumPedalParams; ++i)
         setParam (kPedal[i].id, sp.*(kPedal[i].mem));
 
@@ -282,6 +297,8 @@ void CombinedProcessor::setCurrentProgram (int index)
     setParam ("roomSize",   c.roomSize);
     setParam ("console",    c.console);
     setParam ("tape",       c.tape);
+    setParam ("smear",      c.smear);
+    setParam ("width",      c.width);
     setParam ("outputGain", c.outputGain);
     setParam ("protect",    c.protect);
 }

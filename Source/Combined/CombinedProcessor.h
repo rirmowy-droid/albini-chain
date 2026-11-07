@@ -9,9 +9,12 @@
 #include "../DSP/TapeEmulation.h"
 #include "../Stonoga/StonogaDSP.h"
 #include "EarGuard.h"
+#include "ChoirStage.h"
+#include "SpaceSmear.h"
 
 /** Stonoga x Albini:
-    Kostka Stonoga (4x) -> Amp -> Cab (2 IR) -> Room -> Console -> Tape -> Output -> Ochrona uszu */
+    Kostka Stonoga (4x) -> Amp -> Cab (2 IR) -> Chór -> Room -> Console -> Tape
+    -> Rozmycie/Szerokość -> Output -> Ochrona uszu */
 class CombinedProcessor : public juce::AudioProcessor
 {
 public:
@@ -50,7 +53,7 @@ public:
     // --- opis parametrów dla edytora --------------------------------------
     static constexpr int kNumPedalParams = 28;
     static const char* pedalParamId (int i);
-    static constexpr int kNumChainParams = 9;
+    static constexpr int kNumChainParams = 11;
     static const char* chainParamId (int i);
     static const char* chainParamShortName (int i);
 
@@ -75,6 +78,8 @@ private:
     SimpleRoom room;
     ConsoleSaturation console;
     TapeEmulation tape;
+    ChoirStage choir;
+    SpaceSmear space;
     juce::dsp::Gain<float> outputGain;
     EarGuard guard;
 
@@ -92,6 +97,9 @@ private:
     std::atomic<float>* pTape = nullptr;
     std::atomic<float>* pOutputGain = nullptr;
     std::atomic<float>* pProtect = nullptr;
+    std::atomic<float>* pSmear = nullptr;
+    std::atomic<float>* pWidth = nullptr;
+    std::atomic<float>* pChoir = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CombinedProcessor)
 };

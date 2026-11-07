@@ -1,5 +1,5 @@
 // Stonoga FX — rdzeń przetwarzania (bez zależności od JUCE).
-// Kopia z github.com/rirmowy-droid/stonoga-fx (+ przełącznik builtInProtection).
+// Kopia z github.com/rirmowy-droid/stonoga-fx (+ przełącznik builtInProtection, łagodniejsze rezonatory śpiewu).
 // Przester do noise rocka: kaskadowy fuzz, zagłodzona bateria, rozpadająca się bramka,
 // oktawa, nosowa "maska", rdza (bitcrush + decymacja), trzaski i sprzężenie zwrotne.
 #pragma once
@@ -397,7 +397,7 @@ public:
                     float sg = tail;
                     if (p.sing > 0.001f) {
                         float f = s.sf1.process(tail) * 3.f + s.sf2.process(tail) * 2.f + s.sf3.process(tail) * 0.8f;
-                        f += (s.sr1.process(tail) + s.sr2.process(tail) * 0.7f + s.sr3.process(tail) * 0.5f) * 1.6f;
+                        f += (s.sr1.process(tail) + s.sr2.process(tail) * 0.7f + s.sr3.process(tail) * 0.5f) * 0.7f; // Stonoga x Albini: ciszej (było 1.6 - gwizdało)
                         s.vib += 2.f * kPi * 5.4f / sr; if (s.vib > 2.f * kPi) s.vib -= 2.f * kPi;
                         f *= 1.f + 0.18f * std::sin(s.vib);
                         sg = tail + p.sing * (f - tail);
@@ -493,9 +493,9 @@ private:
             s.sf1.bandpass(sr, F[k][0] + (F[k + 1][0] - F[k][0]) * f, 7.f);
             s.sf2.bandpass(sr, F[k][1] + (F[k + 1][1] - F[k][1]) * f, 9.f);
             s.sf3.bandpass(sr, 2500.f + 400.f * v, 10.f);
-            s.sr1.bandpass(sr, s.trackF, 25.f);
-            s.sr2.bandpass(sr, s.trackF * 2.f, 25.f);
-            s.sr3.bandpass(sr, s.trackF * 3.f, 25.f);
+            s.sr1.bandpass(sr, s.trackF, 9.f);
+            s.sr2.bandpass(sr, s.trackF * 2.f, 9.f);
+            s.sr3.bandpass(sr, s.trackF * 3.f, 9.f);
         }
         if (p.howl > 0.001f) {
             if (s.bloom > 0.95f && rnd(s) < dtSlow / 2.2f) {
