@@ -47,6 +47,16 @@ Na czym oparte są style (to inspiracja, nie kopia brzmienia płyt):
 - *Smoła* – Dirt (Dave Jerden): kilka pieców mieszanych pasmami, trzy U87 jako mikrofony sali, phaser i delay na gitarach, analogowa taśma.
 - *Czarne słońce* – Superunknown (Bad Animals, preampy Neve, taśma Studer).
 
+### Barwa płyty (auto-miks na sumie)
+W stylach **Chicago** i **Smoła** kopia na sumie mierzy miks w 8 pasmach i koryguje go w stronę krzywej zmierzonej z nagrań referencyjnych (60% różnicy, maks. ±4 dB, bez zmiany głośności):
+
+| pasmo | 60 | 125 | 250 | 500 | 1k | 2k | 4k | 8k |
+|---|---|---|---|---|---|---|---|---|
+| In Utero (Very Ape, Scentless Apprentice) | +4,7 | +7,4 | +2,2 | −1,3 | −2,5 | +0,1 | −2,4 | −8,2 |
+| Alice in Chains (Down in a Hole, Sickman, Love Hate Love) | +2,0 | +3,4 | +3,0 | +2,4 | +0,5 | −0,8 | −3,1 | −7,4 |
+
+(dB względem średniej; z nagrań YouTube w mono, więc bez szerokości stereo i bez pasma > 12 kHz). Pozostałe style dostaną krzywe, gdy pojawią się nagrania referencyjne.
+
 ### Auto-miks
 Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę (źródło „Cały miks”). Wybierz styl i kliknij **AUTO-MIKS** w dowolnej kopii, a potem zagraj ~6 s utworu:
 1. ścieżki ustawiają studio wg stylu i mierzą głośność oraz widmo (8 pasm),

@@ -311,4 +311,35 @@ namespace sxa
             outDb[b] = std::round (outDb[b] * 10.f) / 10.f;
         }
     }
+
+    /** Krzywe barwy płyt (8 pasm, dB względem średniej), zmierzone z nagrań referencyjnych
+        tym samym miernikiem, którego używa wtyczka. Źródło: nagrania z YouTube (mono,
+        skompresowane), więc tylko ogólny kształt 60 Hz - 8 kHz.
+          Chicago: In Utero (Very Ape, Scentless Apprentice - miksy Albiniego)
+          Smoła:   Alice in Chains (Down in a Hole, Sickman, Love Hate Love) */
+    struct AlbumCurve { bool has; float db[kNumEqBands]; const char* name; };
+    inline const AlbumCurve kAlbumCurves[kNumStyles] = {
+        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, "" },
+        { true,  { 4.69f, 7.40f, 2.24f, -1.29f, -2.51f, 0.09f, -2.40f, -8.24f }, "In Utero" },
+        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, "" },
+        { true,  { 1.97f, 3.41f, 3.01f, 2.39f, 0.48f, -0.78f, -3.08f, -7.41f }, "Alice in Chains" },
+        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, "" },
+    };
+
+    /** Korekta sumy w stronę krzywej płyty: 60% różnicy, najwyżej +-4 dB na pasmo.
+        Średnia korekty = 0, więc głośność całości się nie zmienia. */
+    inline bool computeAlbumMatch (int style, const float* measuredDb, float* outDb)
+    {
+        const auto& c = kAlbumCurves[style];
+        if (! c.has) { for (int b = 0; b < kNumEqBands; ++b) outDb[b] = 0.f; return false; }
+        float mean = 0.f;
+        for (int b = 0; b < kNumEqBands; ++b) mean += measuredDb[b];
+        mean /= (float) kNumEqBands;
+        float diff[kNumEqBands], dmean = 0.f;
+        for (int b = 0; b < kNumEqBands; ++b) { diff[b] = c.db[b] - (measuredDb[b] - mean); dmean += diff[b]; }
+        dmean /= (float) kNumEqBands;
+        for (int b = 0; b < kNumEqBands; ++b)
+            outDb[b] = std::round (std::max (-4.f, std::min (4.f, 0.6f * (diff[b] - dmean))) * 10.f) / 10.f;
+        return true;
+    }
 }

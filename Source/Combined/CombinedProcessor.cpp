@@ -343,7 +343,8 @@ void CombinedProcessor::timerCallback()
                 sxa::Settings s; stonoga::Params p;
                 readSettings (s, p);
                 sxa::applyTemplate (s, amStyle, ctx);
-                for (const char* id : { "busComp", "width", "smear", "console", "tape", "tilt", "roomMix", "lowCut" })
+                for (const char* id : { "busComp", "width", "smear", "console", "tape", "tilt", "roomMix", "lowCut",
+                                        "consoleModel", "busCompChar", "eq0", "eq1", "eq2", "eq3", "eq4", "eq5", "eq6", "eq7" })
                     for (const auto& def : sxa::kParams)
                         if (juce::String (def.id) == id) setParam (id, s.*(def.mem));
                 setParam ("autoGain", 0.f);
@@ -362,14 +363,24 @@ void CombinedProcessor::timerCallback()
             if (heard >= listenSeconds || elapsed >= listenTimeout)
             {
                 engine.stopMeasuring();
+                juce::String matchText;
                 if (heard > 1.0)
                 {
                     const float gain = juce::jlimit (-24.f, 24.f, sxa::targetDb (amStyle, sxa::Mix, ctx) - engine.getMeasuredDb() - paramValue ("outputGain"));
                     setParam ("autoGain", gain);
+
+                    // barwa całości w stronę krzywej płyty (jeśli styl ją ma)
+                    float bands[sxa::kNumEqBands], eq[sxa::kNumEqBands];
+                    engine.getMeasuredBandsDb (bands);
+                    if (sxa::computeAlbumMatch (amStyle, bands, eq))
+                    {
+                        for (int b = 0; b < sxa::kNumEqBands; ++b) setParam (sxa::kParams[eqParamIndex (b)].id, eq[b]);
+                        matchText = pl (", barwa jak ") + pl (sxa::kAlbumCurves[amStyle].name);
+                    }
                 }
                 const int tracks = ctx.guitars + ctx.basses + ctx.vocals + reg.countSource (sxa::Drums);
                 amState = AM::Idle;
-                autoStatus = pl ("Auto-miks: gotowe – ") + juce::String (tracks) + pl (" ścieżek, styl: ") + pl (sxa::kStyleNames[amStyle]);
+                autoStatus = pl ("Auto-miks: gotowe – ") + juce::String (tracks) + pl (" ścieżek, styl: ") + pl (sxa::kStyleNames[amStyle]) + matchText;
             }
             break;
         }
