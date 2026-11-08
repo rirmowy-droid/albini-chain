@@ -31,6 +31,7 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels)
     tape.prepare (spec);
     guard.prepare (sampleRate, nch);
     duck.prepare (sampleRate);
+    slap.prepare (sampleRate);
     for (int b = 0; b < sxa::kNumEqBands; ++b) bandBp[b].bandpass ((float) sampleRate, sxa::kEqHz[b], 1.4f);
 
     faderGain.reset (sampleRate, 0.05);
@@ -141,13 +142,16 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
 
     // --- na źródle ----------------------------------------------------------------
     srcComp.setAmount (s.srcComp);
-    srcComp.setManual (s.compMode > 0.5f, (int) s.compChar, s.compThresh, s.compRatio,
-                       s.compAttack, s.compRelease, s.compMakeup, s.compMix);
+    srcComp.setCharacter ((int) s.compChar);
+    srcComp.setManual (s.compMode > 0.5f, s.compThresh, s.compRatio, s.compAttack, s.compRelease,
+                       s.compMakeup, s.compMix, s.compAllButtons > 0.5f);
     srcComp.process (block);
     chorus.set (s.chorus, s.chRate, s.chDepth);
     chorus.process (block);
     srcSpace.set (s.srcSmear, s.srcWidth, s.srcLoose, s.srcSize);
     srcSpace.process (block);
+    slap.setAmount (s.slap);
+    slap.process (block);
 
     // --- ustępowanie innym instrumentom ---------------------------------------
     duck.process (block, s, scKick, scVocal);
@@ -158,13 +162,16 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     room.setMix (s.roomMix);
     room.setSize (s.roomSize);
     room.setCrush (s.roomCrush);
+    room.setPredelay (s.roomPredelay);
     room.process (block);
+    console.setModel ((int) s.consoleModel);
     console.setAmount (s.console);
     console.process (block);
     tape.setAmount (s.tape);
     tape.process (block);
 
     // --- na całości -----------------------------------------------------------------
+    busComp.setCharacter ((int) s.busCompChar);
     busComp.setAmount (s.busComp);
     busComp.process (block);
     busSpace.set (s.smear, s.width, 0.f, 0.55f);

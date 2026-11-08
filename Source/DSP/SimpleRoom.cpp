@@ -20,7 +20,7 @@ void SimpleRoom::prepare (const juce::dsp::ProcessSpec& spec)
     sampleRate = spec.sampleRate;
     const auto msToSamples = [this] (float ms) { return (float) (ms * 0.001 * sampleRate); };
 
-    er.init ((int) msToSamples (erWindowMs (1.0f) + 5.0f) + 4);
+    er.init ((int) msToSamples (erWindowMs (1.0f) + maxPredelayMs + 5.0f) + 4);
     for (int i = 0; i < numLines; ++i)
         lines[(size_t) i].init ((int) msToSamples (lineMs[i] * sizeScale (1.0f) + 2.0f) + 4);
 
@@ -30,6 +30,7 @@ void SimpleRoom::prepare (const juce::dsp::ProcessSpec& spec)
 
     mixSmoothed.reset (sampleRate, 0.05);
     sizeSmoothed.reset (sampleRate, 0.25);   // slow: size moves bend pitch slightly, no clicks
+    predelaySmoothed.reset (sampleRate, 0.3);
     lastDecaySize = -1.0f;
     lastInputHpHz = -1.0f;
     updateDecay (sizeTarget);
@@ -44,6 +45,7 @@ void SimpleRoom::reset()
     inputHP.reset();
     inputLP.reset();
     sizeSmoothed.setCurrentAndTargetValue (sizeTarget);
+    predelaySmoothed.setCurrentAndTargetValue (predelayTarget);
 }
 
 void SimpleRoom::updateDecay (float size)
@@ -75,6 +77,7 @@ void SimpleRoom::process (juce::dsp::AudioBlock<float>& block)
         return; // fully dry: let the tail die without costing CPU
 
     updateDecay (sizeTarget);
+    predelaySmoothed.setTargetValue (predelayTarget);
     if (inputHpHz != lastInputHpHz)
     {
         inputHP.setCutoff (sampleRate, inputHpHz);
@@ -104,11 +107,12 @@ void SimpleRoom::process (juce::dsp::AudioBlock<float>& block)
 
         // --- early reflections -----------------------------------------------
         const float erWin = erWindowMs (size) * msToS;
+        const float pre = predelaySmoothed.getNextValue() * msToS;
         float erL = 0.0f, erR = 0.0f;
         for (int t = 0; t < numTaps; ++t)
         {
-            erL += tapGain[t] * er.read (1.0f + tapTimeL[t] * erWin);
-            erR += tapGain[t] * er.read (1.0f + tapTimeR[t] * erWin);
+            erL += tapGain[t] * er.read (1.0f + pre + tapTimeL[t] * erWin);
+            erR += tapGain[t] * er.read (1.0f + pre + tapTimeR[t] * erWin);
         }
 
         // --- late tail (4x4 Hadamard FDN) -------------------------------------
@@ -126,7 +130,8 @@ void SimpleRoom::process (juce::dsp::AudioBlock<float>& block)
         const float h3 = 0.5f * ( o[0] - o[1] - o[2] + o[3]);
 
         // Feed the tail with input + a bit of the ER (diffusion)
-        const float feed = 0.6f * in + 0.25f * (erL + erR);
+        const float inLate = pre > 0.5f ? er.read (1.0f + pre) : in;
+        const float feed = 0.6f * inLate + 0.25f * (erL + erR);
         lines[0].push (feed + h0);
         lines[1].push (feed + h1);
         lines[2].push (feed + h2);

@@ -181,6 +181,23 @@ namespace sxa
         },
     };
 
+    /** Sprzęt i techniki dla stylu (konsoleta, charakter kompresorów, opóźnienie sali, slap).
+        Oparte na tym, co opowiadali realizatorzy tamtych płyt (szczegóły w README). */
+    struct Gear { float console, compChar, busChar, predelayMs, slap; };
+    inline const Gear kGear[kNumStyles][NumSources] = {
+        //  konsoleta  komp. źródła  komp. sumy  opóźn. sali  slap
+        { // Seattle '91: brytyjska konsoleta, 1176 na bębnach, LA-2A na wokalu, slap na wokalu
+            { 1, 0, 5,  6, 0.00f }, { 1, 1, 5,  0, 0.00f }, { 1, 1, 5,  8, 0.00f }, { 1, 2, 5,  5, 0.25f }, { 1, 0, 5, 0, 0.f } },
+        { // Chicago (Albini): brytyjska konsoleta, dbx 160 na bębnach, delikatnie na basie, sala opóźniona, bez kompresji sumy
+            { 1, 0, 0, 12, 0.00f }, { 1, 2, 0,  0, 0.00f }, { 1, 3, 0, 18, 0.00f }, { 1, 2, 0, 10, 0.00f }, { 1, 0, 0, 0, 0.f } },
+        { // Ciepła sala: brytyjska konsoleta, optyczne i lampowe
+            { 1, 2, 4, 10, 0.00f }, { 1, 2, 4,  0, 0.00f }, { 1, 4, 4, 12, 0.00f }, { 1, 2, 4,  8, 0.10f }, { 1, 0, 4, 0, 0.f } },
+        { // Smoła: amerykańska konsoleta (twarda średnica), 1176
+            { 2, 1, 5,  8, 0.00f }, { 2, 1, 5,  0, 0.00f }, { 2, 1, 5, 10, 0.00f }, { 2, 2, 5,  6, 0.05f }, { 2, 0, 5, 0, 0.f } },
+        { // Czarne słońce: brytyjskie preampy, 1176, szyna SSL na sumie
+            { 1, 1, 5,  8, 0.00f }, { 1, 1, 5,  0, 0.00f }, { 1, 1, 5, 12, 0.00f }, { 1, 1, 5,  8, 0.10f }, { 1, 0, 5, 0, 0.f } },
+    };
+
     /** Bębny (punkt odniesienia) mają trafić na tyle dB RMS przed sumą. */
     inline constexpr float kDrumsTargetDb = -20.f;
 
@@ -209,6 +226,12 @@ namespace sxa
         s.duckLowOnly = 1.f;
         s.duckRelease = style == 1 ? 90.f : 130.f;
         s.duckVocal = (src == Guitar && ctx.vocals > 0) ? vocalDuck[style] : 0.f;
+
+        const Gear& g = kGear[style][src];
+        s.consoleModel = g.console; s.compChar = g.compChar; s.busCompChar = g.busChar;
+        s.roomPredelay = g.predelayMs; s.slap = g.slap;
+        s.compMode = 0.f;   // auto-miks pracuje na „jednej gałce”: progi zależą od gałki, nie od poziomu sesji
+        if (style == 1) s.busComp = 0.f;   // Albini: bez kompresji na sumie
 
         if (src == Guitar)
         {

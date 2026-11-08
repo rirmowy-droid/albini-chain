@@ -41,6 +41,9 @@ namespace sxa
 
         // korekta barwy (ustawiana przez auto-miks)
         float autoEqAmt = 1.f;
+
+        // modele sprzętu i techniki z lat 90.
+        float consoleModel = 0, busCompChar = 0, compAllButtons = 0, roomPredelay = 0.f, slap = 0.f;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
@@ -72,7 +75,11 @@ namespace sxa
     };
     inline constexpr int kNumStyles = 5;
     inline const char* const kCompModeNames[] = { "Jedna gałka (auto)", "Ręczny" };
-    inline const char* const kCompCharNames[] = { "Czysty (VCA)", "Szybki (FET)", "Optyczny", "Lampowy" };
+    inline const char* const kCompCharNames[] = { "Czysty (VCA)", "W stylu 1176 (FET)", "W stylu LA-2A (optyczny)",
+                                                  "W stylu dbx 160 (VCA)", "W stylu vari-mu (lampowy)", "W stylu szyny SSL" };
+    inline constexpr int kNumCompChars = 6;
+    inline const char* const kConsoleNames[] = { "Ogólna", "Brytyjska (w stylu Neve)", "Amerykańska (w stylu API)", "Czysta in-line (w stylu SSL/Neotek)" };
+    inline constexpr int kNumConsoles = 4;
 
     inline const ParamDef kParams[] = {
         { "source",     "Źródło",                 "Źródło",       &Settings::source,     0, NumSources - 1, Kind::Choice },
@@ -112,7 +119,12 @@ namespace sxa
         { "protect",    "Ochrona uszu",           "Ochrona uszu", &Settings::protect,    0, 1,     Kind::Percent },
 
         { "compMode",   "Kompresor: tryb",        "Tryb",         &Settings::compMode,   0, 1,     Kind::Choice },
-        { "compChar",   "Kompresor: charakter",   "Charakter",    &Settings::compChar,   0, 3,     Kind::Choice },
+        { "compChar",   "Kompresor: charakter",   "Charakter",    &Settings::compChar,   0, 5,     Kind::Choice },
+        { "compAllButtons", "Kompresor 1176: wszystkie przyciski", "Wszystkie przyciski", &Settings::compAllButtons, 0, 1, Kind::Toggle },
+        { "busCompChar","Całość: charakter kompresora", "Charakter sumy", &Settings::busCompChar, 0, 5, Kind::Choice },
+        { "consoleModel","Konsoleta: model",      "Model konsolety", &Settings::consoleModel, 0, 3, Kind::Choice },
+        { "roomPredelay","Sala: opóźnienie",      "Opóźnienie sali", &Settings::roomPredelay, 0, 40, Kind::Millis },
+        { "slap",       "Krótkie echo (slap)",    "Slap",         &Settings::slap,       0, 1,     Kind::Percent },
         { "compThresh", "Kompresor: próg",        "Próg",         &Settings::compThresh,-40, 0,    Kind::Decibel },
         { "compRatio",  "Kompresor: ratio",       "Ratio",        &Settings::compRatio,  1, 20,    Kind::Ratio },
         { "compAttack", "Kompresor: atak",        "Atak",         &Settings::compAttack, 0.1f, 100, Kind::Millis },

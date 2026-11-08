@@ -107,6 +107,10 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     micAtt = std::make_unique<ComboAtt> (p.apvts, "mic", micBox);
     styleLabel (micLabel, pl ("Mikrofon"), tapeCol);
     micLabel.setJustificationType (juce::Justification::centredBottom);
+    for (int i = 0; i < sxa::kNumConsoles; ++i) consoleBox.addItem (pl (sxa::kConsoleNames[i]), i + 1);
+    consoleAtt = std::make_unique<ComboAtt> (p.apvts, "consoleModel", consoleBox);
+    styleLabel (consoleLabel, pl ("Konsoleta"), tapeCol);
+    consoleLabel.setJustificationType (juce::Justification::centredBottom);
     styleLabel (noPedalLabel, pl ("Kostka i wzmacniacz działają przy gitarze i basie.\nDla tego źródła tor zaczyna się od mikrofonu i studia."),
                 juce::Colour (0xff6d5f4d), 15.f, false);
     noPedalLabel.setJustificationType (juce::Justification::centred);
@@ -122,9 +126,9 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
 
     for (const auto& d : sxa::kPedal) addKnob (pedalKnobs, d.id, pl (d.name), true);
     for (const char* id : { "ampInput", "ampDrive", "cabBlend" }) addKnob (ampKnobs, id, pl (shortNameFor (id)), true);
-    for (const char* id : { "distComp", "chorus", "chrate", "chdepth", "distWidth", "distLoose", "distSmear", "distSize" })
+    for (const char* id : { "distComp", "chorus", "chrate", "chdepth", "distWidth", "distLoose", "distSmear", "distSize", "slap" })
         addKnob (srcKnobs, id, pl (shortNameFor (id)), false);
-    for (const char* id : { "roomMix", "roomSize", "roomCrush", "console", "tape", "tilt", "lowCut", "vocalSpace" })
+    for (const char* id : { "roomMix", "roomSize", "roomPredelay", "roomCrush", "console", "tape", "tilt", "lowCut", "vocalSpace" })
         addKnob (studioKnobs, id, pl (shortNameFor (id)), false);
     for (const char* id : { "busComp", "width", "smear" }) addKnob (busKnobs, id, pl (shortNameFor (id)), false);
     for (const char* id : { "autoGain", "pan", "outputGain", "protect" }) addKnob (outKnobs, id, pl (shortNameFor (id)), false);
@@ -142,7 +146,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
 
     for (auto* list : { &pedalKnobs, &ampKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs })
         for (auto* k : *list) { page1.push_back (&k->slider); page1.push_back (&k->label); }
-    for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &noPedalLabel, &footswitch })
+    for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch })
         page1.push_back (c);
     for (auto& s : irSlots) { page1.push_back (&s.load); page1.push_back (&s.clear); page1.push_back (&s.name); }
 
@@ -156,14 +160,19 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
 
     // ====================== strona 2: kompresor i miks ======================
     for (int i = 0; i < 2; ++i) compModeBox.addItem (pl (sxa::kCompModeNames[i]), i + 1);
-    for (int i = 0; i < 4; ++i) compCharBox.addItem (pl (sxa::kCompCharNames[i]), i + 1);
+    for (int i = 0; i < sxa::kNumCompChars; ++i) { compCharBox.addItem (pl (sxa::kCompCharNames[i]), i + 1); busCharBox.addItem (pl (sxa::kCompCharNames[i]), i + 1); }
     compModeAtt = std::make_unique<ComboAtt> (p.apvts, "compMode", compModeBox);
     compCharAtt = std::make_unique<ComboAtt> (p.apvts, "compChar", compCharBox);
+    busCharAtt  = std::make_unique<ComboAtt> (p.apvts, "busCompChar", busCharBox);
+    styleLabel (busCharLabel, pl ("Kompresor sumy"), tapeCol);
+    busCharLabel.setJustificationType (juce::Justification::centredBottom);
+    allButtonsButton.setButtonText (pl ("1176: wszystkie przyciski"));
+    allButtonsAtt = std::make_unique<ButtonAtt> (p.apvts, "compAllButtons", allButtonsButton);
     styleLabel (compModeLabel, pl ("Tryb"), tapeCol);
     styleLabel (compCharLabel, pl ("Charakter"), tapeCol);
     compModeLabel.setJustificationType (juce::Justification::centredBottom);
     compCharLabel.setJustificationType (juce::Justification::centredBottom);
-    styleLabel (compInfo, pl ("W trybie „Jedna gałka” działa gałka Kompresja ze strony TOR. W trybie ręcznym – te gałki."),
+    styleLabel (compInfo, pl ("„Jedna gałka”: działa gałka Kompresja ze strony TOR, a charakter ustala czasy i barwę. Ręcznie: te gałki, w granicach danego urządzenia (np. 1176: ratio 4/8/12/20)."),
                 juce::Colours::grey, 12.f, false);
 
     for (const char* id : { "compThresh", "compRatio", "compAttack", "compRelease", "compMakeup", "compMix" })
@@ -185,7 +194,8 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
 
     for (auto* list : { &compKnobs, &duckKnobs, &eqKnobs })
         for (auto* k : *list) { page2.push_back (&k->slider); page2.push_back (&k->label); }
-    for (auto* c : std::initializer_list<juce::Component*> { &compModeBox, &compCharBox, &compModeLabel, &compCharLabel, &compInfo, &eqInfo, &lowOnlyButton })
+    for (auto* c : std::initializer_list<juce::Component*> { &compModeBox, &compCharBox, &compModeLabel, &compCharLabel, &busCharBox, &busCharLabel,
+                                                             &allButtonsButton, &compInfo, &eqInfo, &lowOnlyButton })
         page2.push_back (c);
 
     compPanel = { pl ("PEŁNY KOMPRESOR ŹRÓDŁA"), {}, flannel.brighter (0.4f), false };
@@ -413,8 +423,10 @@ void CombinedEditor::resized()
 
         studioPanel.bounds = a.removeFromTop (rowH).reduced (3);
         auto sInner = studioPanel.bounds.reduced (8, 4);
-        layoutCombo (micBox, micLabel, sInner.withWidth (sInner.getWidth() / (studioKnobs.size() + 1)));
-        layoutKnobs (studioKnobs, sInner, 1);
+        const int scw = sInner.getWidth() / (studioKnobs.size() + 2);
+        layoutCombo (micBox, micLabel, sInner.withWidth (scw));
+        layoutCombo (consoleBox, consoleLabel, sInner.withWidth (scw).translated (scw, 0));
+        layoutKnobs (studioKnobs, sInner, 2);
         a.removeFromTop (6);
 
         auto r4 = a;
@@ -445,10 +457,16 @@ void CombinedEditor::resized()
         auto c = compPanel.bounds.reduced (8, 4);
         compInfo.setBounds (c.removeFromBottom (18).reduced (4, 0));
         grMeter = c.removeFromRight (60).reduced (8, 4).withTrimmedTop (16);
+        auto extra = c.removeFromRight (c.getWidth() / 6);
         const int cw = c.getWidth() / 8;
         layoutCombo (compModeBox, compModeLabel, c.withWidth (cw));
         layoutCombo (compCharBox, compCharLabel, c.withWidth (cw).translated (cw, 0));
         layoutKnobs (compKnobs, c, 2);
+        auto ex = extra.withTrimmedTop (20).reduced (4, 0);
+        allButtonsButton.setBounds (ex.removeFromTop (26));
+        ex.removeFromTop (6);
+        busCharLabel.setBounds (ex.removeFromTop (18));
+        busCharBox.setBounds (ex.removeFromTop (26));
         a.removeFromTop (6);
 
         // ustępowanie: 3 gałki + przełącznik + 2 wskaźniki

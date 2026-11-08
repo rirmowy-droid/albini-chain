@@ -60,7 +60,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 if (juce::String (def.id) == "source") ch = names (sxa::kSourceNames, sxa::NumSources);
                 else if (juce::String (def.id) == "mic") ch = names (sxa::kMicNames, sxa::NumMics);
                 else if (juce::String (def.id) == "compMode") ch = names (sxa::kCompModeNames, 2);
-                else if (juce::String (def.id) == "compChar") ch = names (sxa::kCompCharNames, 4);
+                else if (juce::String (def.id) == "compChar" || juce::String (def.id) == "busCompChar") ch = names (sxa::kCompCharNames, sxa::kNumCompChars);
+                else if (juce::String (def.id) == "consoleModel") ch = names (sxa::kConsoleNames, sxa::kNumConsoles);
                 else ch = names (sxa::kStyleNames, sxa::kNumStyles);
                 v.push_back (std::make_unique<juce::AudioParameterChoice> (id, pl (def.name), ch, (int) dv));
                 break;
@@ -80,7 +81,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 R range (def.lo, def.hi, def.kind == sxa::Kind::Decibel ? 0.1f : 0.f);
                 if (def.kind == sxa::Kind::Hertz) range.setSkewForCentre (90.f);
                 if (def.kind == sxa::Kind::Ratio) range.setSkewForCentre (4.f);
-                if (def.kind == sxa::Kind::Millis) range.setSkewForCentre (std::sqrt (def.lo * def.hi));
+                if (def.kind == sxa::Kind::Millis && def.lo > 0.f) range.setSkewForCentre (std::sqrt (def.lo * def.hi));
                 v.push_back (std::make_unique<juce::AudioParameterFloat> (id, pl (def.name), range, dv, att));
                 break;
             }

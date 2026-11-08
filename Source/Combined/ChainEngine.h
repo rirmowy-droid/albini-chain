@@ -15,6 +15,7 @@
 #include "Compressor.h"
 #include "EarGuard.h"
 #include "DuckStage.h"
+#include "SlapEcho.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -78,6 +79,7 @@ private:
     TapeEmulation tape;
     EarGuard guard;
     DuckStage duck;
+    SlapEcho slap;
     float scKick = 0.f, scVocal = 0.f;
     std::atomic<float> pubKick { 0.f }, pubVocal { 0.f };
     stonoga::Biquad bandBp[sxa::kNumEqBands];

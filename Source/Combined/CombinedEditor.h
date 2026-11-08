@@ -48,9 +48,9 @@ private:
 
     // --- strona 1: tor ---
     juce::OwnedArray<Knob> pedalKnobs, ampKnobs, srcKnobs, studioKnobs, busKnobs, outKnobs;
-    juce::ComboBox micBox;
-    std::unique_ptr<ComboAtt> micAtt;
-    juce::Label micLabel, noPedalLabel;
+    juce::ComboBox micBox, consoleBox;
+    std::unique_ptr<ComboAtt> micAtt, consoleAtt;
+    juce::Label micLabel, consoleLabel, noPedalLabel;
     juce::TextButton footswitch;
     std::unique_ptr<ButtonAtt> footswitchAtt;
     struct IRSlot { juce::TextButton load, clear { "x" }; juce::Label name; };
@@ -61,11 +61,11 @@ private:
 
     // --- strona 2: kompresor i miks ---
     juce::OwnedArray<Knob> compKnobs, duckKnobs, eqKnobs;
-    juce::ComboBox compModeBox, compCharBox;
-    std::unique_ptr<ComboAtt> compModeAtt, compCharAtt;
-    juce::Label compModeLabel, compCharLabel, compInfo, eqInfo;
-    juce::ToggleButton lowOnlyButton;
-    std::unique_ptr<ButtonAtt> lowOnlyAtt;
+    juce::ComboBox compModeBox, compCharBox, busCharBox;
+    std::unique_ptr<ComboAtt> compModeAtt, compCharAtt, busCharAtt;
+    juce::Label compModeLabel, compCharLabel, busCharLabel, compInfo, eqInfo;
+    juce::ToggleButton lowOnlyButton, allButtonsButton;
+    std::unique_ptr<ButtonAtt> lowOnlyAtt, allButtonsAtt;
     Panel compPanel, duckPanel, eqPanel;
     juce::Rectangle<int> grMeter, kickMeter, vocalMeter;
 

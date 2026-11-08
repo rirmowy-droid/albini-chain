@@ -22,6 +22,9 @@ public:
     void setCrush (float c)   { crush = juce::jlimit (0.0f, 1.0f, c); }
     /** Dolna granica sygnału, który trafia do sali (bębny niżej, wokal wyżej). */
     void setInputHighpass (float hz) { inputHpHz = juce::jlimit (20.0f, 1000.0f, hz); }
+    /** Opóźnienie mikrofonów sali (Albini: ok. 10-20 ms) - bębny brzmią „dalej” i większe. */
+    void setPredelay (float ms) { predelayTarget = juce::jlimit (0.0f, maxPredelayMs, ms); }
+    static constexpr float maxPredelayMs = 40.0f;
 
     static constexpr double maxTailSeconds = 2.0;
 
@@ -65,4 +68,6 @@ private:
     float sizeTarget = 0.35f, lastDecaySize = -1.0f;
     float crush = 0.0f, crushEnv = 0.0f;
     float inputHpHz = 180.0f, lastInputHpHz = -1.0f;
+    float predelayTarget = 0.0f;
+    juce::SmoothedValue<float> predelaySmoothed { 0.0f };
 };

@@ -35,6 +35,18 @@ Kanał studyjny w stylu Albiniego dla **gitary, basu, perkusji, wokalu i całego
   - **Ustępuj wokalowi** – gdy wokal śpiewa, gitary robią mu dołek w okolicy 2,5 kHz.
 - **Korekta barwy** – 8 pasm (60 Hz–8 kHz) ustawianych przez auto-miks + gałka siły; można poprawiać ręcznie.
 
+### Sprzęt i techniki z lat 90.
+- **Model konsolety**: ogólna, **brytyjska** (w stylu dużych Neve: transformatory, najmocniej nasyca dół, parzyste harmoniczne, gruby niski środek), **amerykańska** (w stylu API: twardsze obcinanie, wypchnięta średnica), **czysta in-line** (w stylu SSL / Neotek).
+- **Charakter kompresora** (na źródle i osobno na sumie): czysty VCA, w stylu **1176** (ratio 4/8/12/20, atak 0,02–0,8 ms, „wszystkie przyciski”), **LA-2A** (stały atak, dwustopniowe puszczanie), **dbx 160** (twarde kolano, puszczanie 120 dB/s), **vari-mu** (lampowy, ratio rośnie z poziomem), **szyny SSL** (ratio 2/4/10, atak i puszczanie przełączane, auto).
+- **Opóźnienie sali** (0–40 ms) – Albini opóźniał mikrofony sali o ok. 10–20 ms.
+- **Slap** – krótkie, prawie podwójne echo na wokalu jak na Nevermind.
+
+Na czym oparte są style (to inspiracja, nie kopia brzmienia płyt):
+- *Chicago bez litości* – Albini przy In Utero (Pachyderm, konsoleta Neve 8068): kompresja tylko czasem (wokal, limiter typu 1176 na werblu, para dbx 160 na overheadach, delikatnie bas przy nagraniu), **bez kompresji na sumie**; dużo mikrofonów sali, opóźnionych.
+- *Seattle '91* – Nevermind (Sound City, Neve 8028 z korektorami 1084): wokal przez kompresor w stylu LA-2A, 1176 na werblu, krótki slap na wokalu, wokale dość suche.
+- *Smoła* – Dirt (Dave Jerden): kilka pieców mieszanych pasmami, trzy U87 jako mikrofony sali, phaser i delay na gitarach, analogowa taśma.
+- *Czarne słońce* – Superunknown (Bad Animals, preampy Neve, taśma Studer).
+
 ### Auto-miks
 Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę (źródło „Cały miks”). Wybierz styl i kliknij **AUTO-MIKS** w dowolnej kopii, a potem zagraj ~6 s utworu:
 1. ścieżki ustawiają studio wg stylu i mierzą głośność oraz widmo (8 pasm),
