@@ -48,6 +48,11 @@ public:
     juce::String getAutoMixStatus() const { return autoStatus; }
     int getSource() const { return (int) std::round (paramValue ("source")); }
 
+    // --- wskaźniki dla UI ---------------------------------------------------
+    float getCompReductionDb() const { return engine.getCompReductionDb(); }
+    float getKickDuckDb() const      { return engine.getKickDuckDb(); }
+    float getVocalDuckDb() const     { return engine.getVocalDuckDb(); }
+
     juce::AudioProcessorValueTreeState apvts;
 
 private:
@@ -68,10 +73,13 @@ private:
     std::array<std::atomic<float>*, sxa::kNumPedal> pedalParams {};
 
     // auto-miks
-    enum class AM { Idle, Listening, WaitingForTracks, ListeningMix };
+    enum class AM { Idle, Listening, WaitingForPeers, WaitingForTracks, ListeningMix };
     AM amState = AM::Idle;
     int registrySlot = -1, seenGeneration = 0, amStyle = 0;
-    double amStart = 0.0;
+    double amStart = 0.0, amPeersStart = 0.0;
+    std::array<float, sxa::kNumEqBands> myBands {};
+    juce::String lastGainText;
+    static int eqParamIndex (int band);
     juce::String autoStatus { juce::String::fromUTF8 ("Auto-miks: wybierz styl i kliknij") };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CombinedProcessor)

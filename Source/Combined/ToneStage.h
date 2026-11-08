@@ -36,9 +36,9 @@ public:
     }
 
 private:
-    enum Slot { LowCut, V1, V2, V3, M1, M2, Space, TiltLo, TiltHi, NumSlots };
+    enum Slot { LowCut, V1, V2, V3, M1, M2, Space, TiltLo, TiltHi, Eq0, NumSlots = Eq0 + sxa::kNumEqBands };
 
-    struct Key { int source = -1, mic = -1; float lowCut = 0, space = 1, tilt = 9; };
+    struct Key { int source = -1, mic = -1; float lowCut = 0, space = 1, tilt = 9; std::array<float, sxa::kNumEqBands> eq {}; };
 
     template <typename Fn>
     void set (int slot, Fn&& fn)
@@ -49,8 +49,14 @@ private:
 
     void configure (const sxa::Settings& s)
     {
-        const Key k { (int) s.source, (int) s.mic, s.lowCut, s.vocalSpace, s.tilt };
-        if (k.source == last.source && k.mic == last.mic && std::abs (k.lowCut - last.lowCut) < 0.5f
+        Key k { (int) s.source, (int) s.mic, s.lowCut, s.vocalSpace, s.tilt, {} };
+        bool eqSame = true;
+        for (int b = 0; b < sxa::kNumEqBands; ++b)
+        {
+            k.eq[(size_t) b] = s.*(sxa::kEqMembers[b]) * s.autoEqAmt;
+            eqSame = eqSame && std::abs (k.eq[(size_t) b] - last.eq[(size_t) b]) < 0.05f;
+        }
+        if (eqSame && k.source == last.source && k.mic == last.mic && std::abs (k.lowCut - last.lowCut) < 0.5f
             && std::abs (k.space - last.space) < 0.05f && std::abs (k.tilt - last.tilt) < 0.01f)
             return;
         last = k;
@@ -101,6 +107,13 @@ private:
             set (TiltLo, [&] (auto& b) { b.lowshelf (sr, 300.f, -4.f * k.tilt); });
             set (TiltHi, [&] (auto& b) { b.highshelf (sr, 2500.f, 4.f * k.tilt); });
         }
+
+        for (int b = 0; b < sxa::kNumEqBands; ++b)
+            if (std::abs (k.eq[(size_t) b]) > 0.05f)
+            {
+                const float g = k.eq[(size_t) b], hz = sxa::kEqHz[b];
+                set (Eq0 + b, [&] (auto& bq) { bq.peak (sr, hz, 1.1f, g); });
+            }
 
         numActive = 0;
         for (int i = 0; i < NumSlots; ++i)

@@ -28,9 +28,19 @@ Kanał studyjny w stylu Albiniego dla **gitary, basu, perkusji, wokalu i całego
 - **Pogłos źródła** z regulowaną **długością** (ok. 0,8–5,6 s), osobny od pogłosu całości.
 - **Sala** z **zgnieceniem** (mocno skompresowane mikrofony sali, klasyka bębnów), **barwa** ciemno/jasno, **obcięcie dołu**, **miejsce na wokal**.
 
+### Strona „KOMPRESOR I MIKS”
+- **Pełny kompresor źródła**: tryb „Jedna gałka” albo „Ręczny” – próg, ratio, atak, puszczanie, wzmocnienie, **mix** (kompresja równoległa) i wskaźnik ściskania. Charaktery: **Czysty (VCA)**, **Szybki (FET)** (szczytowy, agresywny, lekko brudzi), **Optyczny** (puszcza wolniej, gdy mocno ściska), **Lampowy** (bardzo miękkie kolano, ciepło).
+- **Ustępowanie** (kopie wtyczki „słyszą się” nawzajem):
+  - **Ustępuj stopie** – bas ścisza się przy każdym uderzeniu stopy (cały albo **tylko dół < 150 Hz**), z regulowanym powrotem,
+  - **Ustępuj wokalowi** – gdy wokal śpiewa, gitary robią mu dołek w okolicy 2,5 kHz.
+- **Korekta barwy** – 8 pasm (60 Hz–8 kHz) ustawianych przez auto-miks + gałka siły; można poprawiać ręcznie.
+
 ### Auto-miks
 Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę (źródło „Cały miks”). Wybierz styl i kliknij **AUTO-MIKS** w dowolnej kopii, a potem zagraj ~6 s utworu:
-ścieżki ustawiają studio wg stylu, głośność względem bębnów, gitary rozstawiają się na boki, gitary dostają obcięcie dołu pod bas i miejsce na wokal; suma czeka na ścieżki, mierzy całość i ustawia głośność końcową.
+1. ścieżki ustawiają studio wg stylu i mierzą głośność oraz widmo (8 pasm),
+2. każda ustawia głośność względem bębnów, panoramę (gitary na boki), ustępowanie (bas → stopa, gitary → wokal),
+3. **korekta barwy**: każda ścieżka porównuje swoje widmo z widmami pozostałych i robi miejsce tam, gdzie ważniejszy instrument jest głośny (np. gitary oddają dół basowi, a środek-górę wokalowi; wokal oddaje dół), a tam, gdzie sama jest najważniejsza i przykryta – lekko się podbija,
+4. suma czeka na wszystkie ścieżki, mierzy całość i ustawia obróbkę oraz głośność końcową.
 
 Style (inspirowane brzmieniem płyt grunge’owych początku lat 90.):
 - **Seattle '91** – jasno i zbito (zwarte bębny, gitary szeroko, wokal z przodu)

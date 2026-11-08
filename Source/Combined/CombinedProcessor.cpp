@@ -45,6 +45,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
         return "A " + juce::String (100 - b) + " / B " + juce::String (b);
     });
     const auto rate = Att().withStringFromValueFunction ([] (float x, int) { return juce::String (0.08f + x * x * 2.9f, 2) + " Hz"; });
+    const auto msA  = Att().withStringFromValueFunction ([] (float x, int) { return x < 10.f ? juce::String (x, 1) + " ms" : juce::String (juce::roundToInt (x)) + " ms"; });
+    const auto ratA = Att().withStringFromValueFunction ([] (float x, int) { return juce::String (x, x < 10.f ? 1 : 0) + ":1"; });
 
     for (const auto& def : sxa::kParams)
     {
@@ -57,6 +59,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 juce::StringArray ch;
                 if (juce::String (def.id) == "source") ch = names (sxa::kSourceNames, sxa::NumSources);
                 else if (juce::String (def.id) == "mic") ch = names (sxa::kMicNames, sxa::NumMics);
+                else if (juce::String (def.id) == "compMode") ch = names (sxa::kCompModeNames, 2);
+                else if (juce::String (def.id) == "compChar") ch = names (sxa::kCompCharNames, 4);
                 else ch = names (sxa::kStyleNames, sxa::kNumStyles);
                 v.push_back (std::make_unique<juce::AudioParameterChoice> (id, pl (def.name), ch, (int) dv));
                 break;
@@ -70,9 +74,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                                 : def.kind == sxa::Kind::Hertz   ? hz
                                 : def.kind == sxa::Kind::Pan     ? panA
                                 : def.kind == sxa::Kind::Blend   ? blnd
-                                : def.kind == sxa::Kind::Rate    ? rate : pct;
+                                : def.kind == sxa::Kind::Rate    ? rate
+                                : def.kind == sxa::Kind::Millis  ? msA
+                                : def.kind == sxa::Kind::Ratio   ? ratA : pct;
                 R range (def.lo, def.hi, def.kind == sxa::Kind::Decibel ? 0.1f : 0.f);
                 if (def.kind == sxa::Kind::Hertz) range.setSkewForCentre (90.f);
+                if (def.kind == sxa::Kind::Ratio) range.setSkewForCentre (4.f);
+                if (def.kind == sxa::Kind::Millis) range.setSkewForCentre (std::sqrt (def.lo * def.hi));
                 v.push_back (std::make_unique<juce::AudioParameterFloat> (id, pl (def.name), range, dv, att));
                 break;
             }
@@ -98,9 +106,12 @@ CombinedProcessor::CombinedProcessor()
 CombinedProcessor::~CombinedProcessor()
 {
     stopTimer();
-    if (amState == AM::Listening)
-        sxa::MixRegistry::get().pendingTracks.fetch_sub (1);
-    sxa::MixRegistry::get().remove (registrySlot);
+    auto& reg = sxa::MixRegistry::get();
+    if (amState == AM::Listening) reg.pendingTracks.fetch_sub (1);
+    if (amState == AM::Listening || amState == AM::WaitingForPeers) reg.pendingEq.fetch_sub (1);
+    reg.clearSpectrum (registrySlot);
+    reg.publishEnvelopes (registrySlot, 0.f, 0.f);
+    reg.remove (registrySlot);
 }
 
 bool CombinedProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -139,6 +150,12 @@ void CombinedProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     sxa::Settings s; stonoga::Params p;
     readSettings (s, p);
 
+    // ustępowanie: obwiednie stopy i głosu od innych kopii wtyczki
+    auto& reg = sxa::MixRegistry::get();
+    float kick = 0.f, vocal = 0.f;
+    reg.readEnvelopes (registrySlot, kick, vocal);
+    engine.setSidechain (kick, vocal);
+
     juce::dsp::AudioBlock<float> full (buffer);
     full = full.getSubsetChannelBlock (0, (size_t) juce::jmax (1, numOut));
     for (size_t pos = 0; pos < full.getNumSamples(); pos += (size_t) maxBlockSize)
@@ -146,6 +163,7 @@ void CombinedProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         auto chunk = full.getSubBlock (pos, juce::jmin ((size_t) maxBlockSize, full.getNumSamples() - pos));
         engine.process (chunk, s, p);
     }
+    reg.publishEnvelopes (registrySlot, engine.getPublishedKick(), engine.getPublishedVocal());
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +203,19 @@ void CombinedProcessor::setCurrentProgram (int index)
 // ---------------------------------------------------------------------------
 // Auto-miks
 // ---------------------------------------------------------------------------
+int CombinedProcessor::eqParamIndex (int band)
+{
+    static const auto table = []
+    {
+        std::array<int, sxa::kNumEqBands> t {};
+        for (int b = 0; b < sxa::kNumEqBands; ++b)
+            for (int i = 0; i < sxa::kNumParams; ++i)
+                if (sxa::kParams[i].mem == sxa::kEqMembers[b]) t[(size_t) b] = i;
+        return t;
+    }();
+    return table[(size_t) band];
+}
+
 sxa::MixContext CombinedProcessor::mixContext() const
 {
     auto& reg = sxa::MixRegistry::get();
@@ -194,6 +225,7 @@ sxa::MixContext CombinedProcessor::mixContext() const
     c.guitarIndex = idx;
     c.basses = reg.countSource (sxa::Bass);
     c.vocals = reg.countSource (sxa::Vocals);
+    c.drums  = reg.countSource (sxa::Drums);
     return c;
 }
 
@@ -225,6 +257,8 @@ void CombinedProcessor::timerCallback()
         else
         {
             if (amState != AM::Listening) reg.pendingTracks.fetch_add (1);
+            if (amState != AM::Listening && amState != AM::WaitingForPeers) reg.pendingEq.fetch_add (1);
+            reg.clearSpectrum (registrySlot);
             amState = AM::Listening;
             // najpierw styl (kompresja, sala, taśma zmieniają głośność), potem pomiar
             sxa::Settings s; stonoga::Params p;
@@ -255,23 +289,55 @@ void CombinedProcessor::timerCallback()
             {
                 engine.stopMeasuring();
                 juce::String gainText;
+                float gain = paramValue ("autoGain");
                 if (heard > 1.0)
                 {
-                    const float gain = juce::jlimit (-24.f, 24.f, sxa::targetDb (amStyle, source, ctx) - engine.getMeasuredDb() - paramValue ("outputGain"));
+                    gain = juce::jlimit (-24.f, 24.f, sxa::targetDb (amStyle, source, ctx) - engine.getMeasuredDb() - paramValue ("outputGain"));
                     setParam ("autoGain", gain);
                     gainText = ", " + juce::String (gain, 1) + " dB";
+
+                    // widmo po ustawieniu głośności -> dla korekty barwy wszystkich ścieżek
+                    float bands[sxa::kNumEqBands];
+                    engine.getMeasuredBandsDb (bands);
+                    for (auto& b : bands) b += gain + paramValue ("outputGain");
+                    std::copy (bands, bands + sxa::kNumEqBands, myBands.begin());
+                    reg.publishSpectrum (registrySlot, bands);
                 }
                 else gainText = pl (", cisza – głośność bez zmian");
 
                 reg.pendingTracks.fetch_sub (1);
-                amState = AM::Idle;
-                autoStatus = pl ("Auto-miks: gotowe (") + pl (sxa::kSourceNames[source]) + gainText + ")";
+                amState = AM::WaitingForPeers;
+                amPeersStart = now;
+                lastGainText = gainText;
+                autoStatus = pl ("Auto-miks: czekam na inne ścieżki (korekta barwy)…");
             }
             break;
         }
 
+        case AM::WaitingForPeers:
+            if (reg.pendingTracks.load() <= 0 || now - amPeersStart > waitTracksTimeout)
+            {
+                juce::String eqText = pl (", bez korekty barwy");
+                if (engine.getMeasuredSeconds() > 1.0)
+                {
+                    float out[sxa::kNumEqBands];
+                    sxa::computeAutoEq (source, myBands.data(), reg.otherSpectra (registrySlot), out);
+                    int changed = 0;
+                    for (int b = 0; b < sxa::kNumEqBands; ++b)
+                    {
+                        setParam (sxa::kParams[eqParamIndex (b)].id, out[b]);
+                        if (std::abs (out[b]) > 0.05f) ++changed;
+                    }
+                    eqText = ", korekta barwy: " + juce::String (changed) + pl (" pasm");
+                }
+                reg.pendingEq.fetch_sub (1);
+                amState = AM::Idle;
+                autoStatus = pl ("Auto-miks: gotowe (") + pl (sxa::kSourceNames[source]) + lastGainText + eqText + ")";
+            }
+            break;
+
         case AM::WaitingForTracks:
-            if ((elapsed > 1.0 && reg.pendingTracks.load() <= 0) || elapsed > waitTracksTimeout)
+            if ((elapsed > 1.0 && reg.pendingEq.load() <= 0) || elapsed > waitTracksTimeout)
             {
                 sxa::Settings s; stonoga::Params p;
                 readSettings (s, p);

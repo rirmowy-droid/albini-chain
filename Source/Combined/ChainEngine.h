@@ -14,6 +14,7 @@
 #include "SpaceSmear.h"
 #include "Compressor.h"
 #include "EarGuard.h"
+#include "DuckStage.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -36,6 +37,16 @@ public:
     /** Przetwarza fragment nie dłuższy niż maxBlock. */
     void process (juce::dsp::AudioBlock<float>& block, const sxa::Settings& s, const stonoga::Params& pedalIn);
 
+    // --- ustępowanie: wejście od innych kopii, wyjście dla innych -------------
+    void setSidechain (float kickNorm, float vocalNorm) { scKick = kickNorm; scVocal = vocalNorm; }
+    float getPublishedKick() const  { return pubKick.load(); }
+    float getPublishedVocal() const { return pubVocal.load(); }
+
+    // --- wskaźniki ---------------------------------------------------------------
+    float getCompReductionDb() const   { return srcComp.getGainReductionDb(); }
+    float getKickDuckDb() const        { return duck.getKickDuckDb(); }
+    float getVocalDuckDb() const       { return duck.getVocalDuckDb(); }
+
     CabinetStage& cabinet() { return cab; }
 
     // --- pomiar głośności dla auto-miksu (przed suwakiem) -------------------
@@ -43,6 +54,8 @@ public:
     void stopMeasuring()   { measuring = false; }
     float getMeasuredDb() const;
     float getMeasuredSeconds() const { return activeSeconds.load(); }
+    /** Widmo z pomiaru: energia w 8 pasmach (dB), jak na wyjściu przed suwakiem. */
+    void getMeasuredBandsDb (float* out8) const;
 
 private:
     double sr = 48000.0;
@@ -64,6 +77,12 @@ private:
     ConsoleSaturation console;
     TapeEmulation tape;
     EarGuard guard;
+    DuckStage duck;
+    float scKick = 0.f, scVocal = 0.f;
+    std::atomic<float> pubKick { 0.f }, pubVocal { 0.f };
+    stonoga::Biquad bandBp[sxa::kNumEqBands];
+    double bandSq[sxa::kNumEqBands] {};
+    std::array<std::atomic<float>, sxa::kNumEqBands> bandMs {};
 
     juce::SmoothedValue<float> faderGain, panL, panR;
 

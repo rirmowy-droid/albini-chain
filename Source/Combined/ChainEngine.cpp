@@ -30,6 +30,8 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels)
     console.prepare (spec);
     tape.prepare (spec);
     guard.prepare (sampleRate, nch);
+    duck.prepare (sampleRate);
+    for (int b = 0; b < sxa::kNumEqBands; ++b) bandBp[b].bandpass ((float) sampleRate, sxa::kEqHz[b], 1.4f);
 
     faderGain.reset (sampleRate, 0.05);
     panL.reset (sampleRate, 0.05);
@@ -53,6 +55,12 @@ float ChainEngine::getLatencyInSamples() const
          + (float) tape.getLatencyInSamples();
 }
 
+void ChainEngine::getMeasuredBandsDb (float* out8) const
+{
+    for (int b = 0; b < sxa::kNumEqBands; ++b)
+        out8[b] = 10.f * std::log10 (bandMs[(size_t) b].load() + 1e-12f);
+}
+
 float ChainEngine::getMeasuredDb() const
 {
     return 10.f * std::log10 (measuredMs.load() + 1e-12f);
@@ -64,6 +72,10 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     const bool pedalSource = sxa::hasPedal (source);
     const auto n   = block.getNumSamples();
     const auto nCh = juce::jmin (block.getNumChannels(), (size_t) osDry.getNumChannels());
+
+    // nadajnik dla innych kopii: stopa z bębnów, obwiednia głosu z wokalu
+    pubKick  = source == sxa::Drums  ? duck.analyseKick (block)  : 0.f;
+    pubVocal = source == sxa::Vocals ? duck.analyseVocal (block) : 0.f;
 
     // DI basu: czysty sygnał sprzed kostki i pieca (dół pod wzmacniaczem)
     const bool bass = source == sxa::Bass;
@@ -129,11 +141,16 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
 
     // --- na źródle ----------------------------------------------------------------
     srcComp.setAmount (s.srcComp);
+    srcComp.setManual (s.compMode > 0.5f, (int) s.compChar, s.compThresh, s.compRatio,
+                       s.compAttack, s.compRelease, s.compMakeup, s.compMix);
     srcComp.process (block);
     chorus.set (s.chorus, s.chRate, s.chDepth);
     chorus.process (block);
     srcSpace.set (s.srcSmear, s.srcWidth, s.srcLoose, s.srcSize);
     srcSpace.process (block);
+
+    // --- ustępowanie innym instrumentom ---------------------------------------
+    duck.process (block, s, scKick, scVocal);
 
     // --- studio -------------------------------------------------------------------
     static const float roomHp[sxa::NumSources] = { 180.f, 120.f, 60.f, 250.f, 150.f };
@@ -158,6 +175,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     {
         sumSq = 0.0; counted = 0;
         measuredMs = 0.f; activeSeconds = 0.f;
+        for (int b = 0; b < sxa::kNumEqBands; ++b) { bandSq[b] = 0.0; bandMs[(size_t) b] = 0.f; bandBp[b].reset(); }
         for (int c = 0; c < 2; ++c) { kHp[c].reset(); kShelf[c].reset(); }
     }
     if (measuring.load())
@@ -165,6 +183,12 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         double blockSq = 0.0;
         const auto* l = block.getChannelPointer (0);
         const auto* r = nCh > 1 ? block.getChannelPointer (1) : l;
+        double bandBlock[sxa::kNumEqBands] {};
+        for (size_t i = 0; i < n; ++i)
+        {
+            const float m = 0.5f * (l[i] + r[i]);
+            for (int b = 0; b < sxa::kNumEqBands; ++b) { const float y = bandBp[b].process (m); bandBlock[b] += (double) y * y; }
+        }
         for (size_t i = 0; i < n; ++i)   // moc obu kanałów: panorama ze stałą mocą jej nie zmienia
         {
             const float kl = kShelf[0].process (kHp[0].process (l[i]));
@@ -175,6 +199,11 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         {
             sumSq += blockSq; counted += (long long) n;
             measuredMs = (float) (sumSq / (double) counted);
+            for (int b = 0; b < sxa::kNumEqBands; ++b)
+            {
+                bandSq[b] += bandBlock[b];
+                bandMs[(size_t) b] = (float) (bandSq[b] / (double) counted);
+            }
             activeSeconds = (float) ((double) counted / sr);
         }
     }

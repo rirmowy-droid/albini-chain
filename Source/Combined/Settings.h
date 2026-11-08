@@ -31,9 +31,25 @@ namespace sxa
 
         // wyjście
         float autoGain = 0.f, pan = 0.f, outputGain = 0.f, protect = 0.7f;
+
+        // pełny kompresor źródła
+        float compMode = 0, compChar = 0, compThresh = -18.f, compRatio = 4.f;
+        float compAttack = 10.f, compRelease = 150.f, compMakeup = 0.f, compMix = 1.f;
+
+        // ustępowanie innym instrumentom
+        float duckKick = 0.f, duckLowOnly = 1.f, duckRelease = 120.f, duckVocal = 0.f;
+
+        // korekta barwy (ustawiana przez auto-miks)
+        float autoEqAmt = 1.f;
+        float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
-    enum class Kind { Percent, Decibel, Choice, Toggle, Hertz, Pan, Blend, Rate };
+    inline constexpr int kNumEqBands = 8;
+    inline const float kEqHz[kNumEqBands] = { 60.f, 125.f, 250.f, 500.f, 1000.f, 2000.f, 4000.f, 8000.f };
+    inline float Settings::* const kEqMembers[kNumEqBands] = { &Settings::eq0, &Settings::eq1, &Settings::eq2, &Settings::eq3,
+                                                              &Settings::eq4, &Settings::eq5, &Settings::eq6, &Settings::eq7 };
+
+    enum class Kind { Percent, Decibel, Choice, Toggle, Hertz, Pan, Blend, Rate, Millis, Ratio };
 
     struct ParamDef
     {
@@ -55,6 +71,8 @@ namespace sxa
         "Czarne słońce – gęsto i szeroko",
     };
     inline constexpr int kNumStyles = 5;
+    inline const char* const kCompModeNames[] = { "Jedna gałka (auto)", "Ręczny" };
+    inline const char* const kCompCharNames[] = { "Czysty (VCA)", "Szybki (FET)", "Optyczny", "Lampowy" };
 
     inline const ParamDef kParams[] = {
         { "source",     "Źródło",                 "Źródło",       &Settings::source,     0, NumSources - 1, Kind::Choice },
@@ -92,6 +110,30 @@ namespace sxa
         { "pan",        "Panorama ścieżki",       "Pan",          &Settings::pan,       -1, 1,     Kind::Pan },
         { "outputGain", "Wyjście",                "Wyjście",      &Settings::outputGain,-24, 12,   Kind::Decibel },
         { "protect",    "Ochrona uszu",           "Ochrona uszu", &Settings::protect,    0, 1,     Kind::Percent },
+
+        { "compMode",   "Kompresor: tryb",        "Tryb",         &Settings::compMode,   0, 1,     Kind::Choice },
+        { "compChar",   "Kompresor: charakter",   "Charakter",    &Settings::compChar,   0, 3,     Kind::Choice },
+        { "compThresh", "Kompresor: próg",        "Próg",         &Settings::compThresh,-40, 0,    Kind::Decibel },
+        { "compRatio",  "Kompresor: ratio",       "Ratio",        &Settings::compRatio,  1, 20,    Kind::Ratio },
+        { "compAttack", "Kompresor: atak",        "Atak",         &Settings::compAttack, 0.1f, 100, Kind::Millis },
+        { "compRelease","Kompresor: puszczanie",  "Puszczanie",   &Settings::compRelease,10, 1500, Kind::Millis },
+        { "compMakeup", "Kompresor: wzmocnienie", "Wzmocnienie",  &Settings::compMakeup, 0, 24,    Kind::Decibel },
+        { "compMix",    "Kompresor: mix (równoległa)", "Mix",     &Settings::compMix,    0, 1,     Kind::Percent },
+
+        { "duckKick",   "Ustępuj stopie",         "Ustępuj stopie", &Settings::duckKick, 0, 12,    Kind::Decibel },
+        { "duckLowOnly","Ustępuj stopie: tylko dół", "Tylko dół", &Settings::duckLowOnly, 0, 1,    Kind::Toggle },
+        { "duckRelease","Ustępuj stopie: powrót", "Powrót",       &Settings::duckRelease,20, 400,  Kind::Millis },
+        { "duckVocal",  "Ustępuj wokalowi",       "Ustępuj wokalowi", &Settings::duckVocal, 0, 8,  Kind::Decibel },
+
+        { "autoEqAmt",  "Korekta barwy: siła",    "Siła",         &Settings::autoEqAmt,  0, 1,     Kind::Percent },
+        { "eq0",        "Korekta 60 Hz",          "60",           &Settings::eq0,       -8, 4,     Kind::Decibel },
+        { "eq1",        "Korekta 125 Hz",         "125",          &Settings::eq1,       -8, 4,     Kind::Decibel },
+        { "eq2",        "Korekta 250 Hz",         "250",          &Settings::eq2,       -8, 4,     Kind::Decibel },
+        { "eq3",        "Korekta 500 Hz",         "500",          &Settings::eq3,       -8, 4,     Kind::Decibel },
+        { "eq4",        "Korekta 1 kHz",          "1k",           &Settings::eq4,       -8, 4,     Kind::Decibel },
+        { "eq5",        "Korekta 2 kHz",          "2k",           &Settings::eq5,       -8, 4,     Kind::Decibel },
+        { "eq6",        "Korekta 4 kHz",          "4k",           &Settings::eq6,       -8, 4,     Kind::Decibel },
+        { "eq7",        "Korekta 8 kHz",          "8k",           &Settings::eq7,       -8, 4,     Kind::Decibel },
     };
     inline constexpr int kNumParams = (int) (sizeof (kParams) / sizeof (kParams[0]));
 
