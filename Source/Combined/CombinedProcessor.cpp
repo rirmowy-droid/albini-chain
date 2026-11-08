@@ -66,6 +66,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 else if (juce::String (def.id) == "compMode" || juce::String (def.id) == "busMode") ch = names (sxa::kCompModeNames, 2);
                 else if (juce::String (def.id) == "compChar" || juce::String (def.id) == "busCompChar") ch = names (sxa::kCompCharNames, sxa::kNumCompChars);
                 else if (juce::String (def.id) == "consoleModel") ch = names (sxa::kConsoleNames, sxa::kNumConsoles);
+                else if (juce::String (def.id) == "ampModel") ch = names (sxa::kAmpNames, sxa::kNumAmps);
+                else if (juce::String (def.id) == "cabMic") ch = names (sxa::kCabMicNames, sxa::kNumCabMics);
                 else if (juce::String (def.id) == "cabA" || juce::String (def.id) == "cabB")
                 {
                     ch.add (pl ("Plik / wbudowana krzywa"));
@@ -137,7 +139,8 @@ bool CombinedProcessor::isBusesLayoutSupported (const BusesLayout& layouts) cons
 void CombinedProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     maxBlockSize = juce::jmax (1, samplesPerBlock);
-    engine.prepare (sampleRate, maxBlockSize, juce::jmax (1, getTotalNumOutputChannels()));
+    preparedRate = sampleRate;
+    engine.prepare (sampleRate, maxBlockSize, juce::jmax (1, getTotalNumOutputChannels()), paramValue ("hq") > 0.5f);
     setLatencySamples (juce::roundToInt (engine.getLatencyInSamples()));
 }
 
@@ -253,6 +256,18 @@ void CombinedProcessor::timerCallback()
 
     const double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
     const int gen = reg.currentGeneration();
+
+    // tryb wysokiej jakości (8x): inna latencja, więc przygotuj tor od nowa
+    const bool hqWanted = paramValue ("hq") > 0.5f;
+    if (preparedRate > 0.0 && hqWanted != engine.isHighQuality())
+    {
+        suspendProcessing (true);
+        engine.prepare (preparedRate, maxBlockSize, juce::jmax (1, getTotalNumOutputChannels()), hqWanted);
+        loadedCab = { -1, -1 };
+        suspendProcessing (false);
+        setLatencySamples (juce::roundToInt (engine.getLatencyInSamples()));
+    }
+    engine.cabinet().setAlign (paramValue ("cabAlign") > 0.5f);
 
     // wbudowane IR kolumn: wczytaj, gdy wybór się zmienił (wątek wiadomości)
     for (int slot = 0; slot < 2; ++slot)

@@ -47,6 +47,13 @@ private:
     int page = 0;
 
     // --- strona 1: tor ---
+    juce::OwnedArray<Knob> cabKnobs;
+    juce::ComboBox ampModelBox, cabMicBox;
+    std::unique_ptr<ComboAtt> ampModelAtt, cabMicAtt;
+    juce::Label ampModelLabel, cabMicLabel;
+    juce::ToggleButton hqButton, alignButton;
+    std::unique_ptr<ButtonAtt> hqAtt, alignAtt;
+    Panel cabPanel;
     juce::OwnedArray<Knob> pedalKnobs, ampKnobs, srcKnobs, studioKnobs, busKnobs, outKnobs;
     juce::ComboBox micBox, consoleBox;
     std::unique_ptr<ComboAtt> micAtt, consoleAtt;

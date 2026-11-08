@@ -1,24 +1,27 @@
 #include "ChainEngine.h"
 
-void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels)
+void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, bool highQuality)
 {
     sr = sampleRate;
+    hqPrepared = highQuality;
+    const int osLog2 = highQuality ? 3 : 2;
+    osFactor = 1 << osLog2;
     maxBlockSize = juce::jmax (1, maxBlock);
     const int nch = juce::jmax (1, numChannels);
     const juce::dsp::ProcessSpec spec { sampleRate, (juce::uint32) maxBlockSize, (juce::uint32) nch };
 
-    pedalOS = std::make_unique<juce::dsp::Oversampling<float>> ((size_t) nch, 2,
+    pedalOS = std::make_unique<juce::dsp::Oversampling<float>> ((size_t) nch, (size_t) osLog2,
         juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
     pedalOS->initProcessing ((size_t) maxBlockSize);
     pedal.builtInProtection = false;
-    pedal.prepare (sampleRate * 4.0, nch);
-    osDry.setSize (nch, maxBlockSize * 4, false, true, true);
+    pedal.prepare (sampleRate * osFactor, nch);
+    osDry.setSize (nch, maxBlockSize * osFactor, false, true, true);
     diBuf.setSize (nch, maxBlockSize, false, true, true);
-    pedalMix.reset (sampleRate * 4.0, 0.02);
+    pedalMix.reset (sampleRate * osFactor, 0.02);
     pedalMix.setCurrentAndTargetValue (1.f);
     for (auto& f : diLp) { f.lowpass ((float) sampleRate, 250.f, 0.7f); f.reset(); }
 
-    amp.prepare (spec);
+    amp.prepare (spec, osLog2);
     cab.prepare (spec);
     tone.prepare (sampleRate);
     srcComp.prepare (sampleRate, Compressor::Mode::Sustain);
@@ -142,12 +145,17 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     amp.setPassThrough (! pedalSource);
     amp.setGain (s.ampInput);
     amp.setDrive (s.ampDrive);
+    amp.setModel ((int) std::round (s.ampModel));
+    amp.setPresence (s.ampPresence);
+    amp.setResonance (s.ampResonance);
+    amp.setSag (s.ampSag);
     amp.process (block);
 
     if (pedalSource)
     {
         cab.setBassVoicing (bass);
         cab.setBlend (s.cabBlend);
+        cab.setMic ((int) std::round (s.cabMic), s.micPos, s.micDist);
         cab.process (block);
     }
 

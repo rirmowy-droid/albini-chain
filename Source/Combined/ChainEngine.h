@@ -35,7 +35,9 @@
 class ChainEngine
 {
 public:
-    void prepare (double sampleRate, int maxBlock, int numChannels);
+    /** highQuality: kostka i wzmacniacz na 8x zamiast 4x (inna latencja - wołać prepare ponownie). */
+    void prepare (double sampleRate, int maxBlock, int numChannels, bool highQuality = false);
+    bool isHighQuality() const { return hqPrepared; }
     float getLatencyInSamples() const;
 
     /** Przetwarza fragment nie dłuższy niż maxBlock. */
@@ -76,6 +78,8 @@ public:
 
 private:
     double sr = 48000.0;
+    bool hqPrepared = false;
+    int osFactor = 4;
     int maxBlockSize = 512;
 
     std::unique_ptr<juce::dsp::Oversampling<float>> pedalOS;

@@ -125,6 +125,16 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 | Tape    | kompresja taśmy, head bump, utrata góry, delikatny wow/flutter |
 | Output  | gain wyjściowy |
 
+## Piec, mikrofon przy kolumnie, jakość 8x (Stonoga x Albini)
+
+- **Piec**: *Albini* (prosty crunch, jak dotąd), *Brytyjski 800* (w stylu Marshalla JCM800: środek do przodu), *Prostownik* (w stylu Mesa Dual Rectifier: dużo gainu, wycięty środek, zwarty dół), *Amerykański czysty* (w stylu Fendera Twin: dużo zapasu, rwie się końcówka), *Basowy SVT* (w stylu Ampega). Każdy ma kilka stopni lampowych, własną barwę i końcówkę mocy.
+- **Presence / Resonance**: ±6 dB góry (3,5 kHz) i dołu (100 Hz) za końcówką, jak w piecach.
+- **Sag**: zasilanie „przysiada” przy mocnym uderzeniu (do ok. −2,5 dB po 200 ms), granie robi się bardziej ściśnięte i żywe.
+- **Jakość 8x**: kostka i piec liczone 8x zamiast 4x. Aliasy przy mocnym przesterze spadają o ok. 15 dB (gładsza, mniej „cyfrowa” góra), zużycie procesora rośnie ok. 1,7x.
+- **Mikrofon przy kolumnie**: *Jak w IR (SM57)*, *SM57*, *MD421*, *Wstęgowy (w stylu R-121)*, *Pojemnościowy (w stylu U87)* – różnica barwy względem SM57, którym zwykle nagrane są IR-y. **Pozycja**: środek membrany = jaśniej, brzeg = ciemniej. **Odległość**: przy siatce = więcej dołu (efekt zbliżeniowy), dalej = mniej dołu i odbicie od podłogi.
+- **Wyrównaj fazę A/B**: IR B jest przesuwany (do ±2 ms) i w razie potrzeby odwracany, żeby zgrał się z A – mniej „dziur” przy mieszaniu dwóch kolumn.
+- Nowe presety: *Brytyjski piec w Seattle*, *Prostownik, ciężko i zwarcie*, *Twin na krawędzi*, *Wstęgowy przy brzegu, ciemno*, *Bas: Piec SVT w piwnicy*. Stare presety brzmią jak wcześniej (piec *Albini*).
+
 ## IR-y kabinetu
 
 - **Wbudowane IR-y** (Stonoga x Albini): 15 odpowiedzi 4x12 z głośnikami V30 z darmowej paczki Jesters Brutal Pack (CC0), pogrupowane na *ciemne / średnie / jasne*. Wybierasz je z listy przy slocie A i B, a blend miesza oba. Domyślnie gitara: A = średnia 2, B = ciemna 2. Szczegóły i licencja: `Resources/IR/LICENSE-IR.md`.

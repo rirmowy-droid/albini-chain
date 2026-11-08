@@ -75,6 +75,7 @@ private:
 
     ChainEngine engine;
     int maxBlockSize = 512;
+    double preparedRate = 0.0;
     int currentProgram = 0;
 
     std::array<std::atomic<float>*, sxa::kNumParams> params {};

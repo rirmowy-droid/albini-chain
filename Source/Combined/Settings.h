@@ -50,6 +50,9 @@ namespace sxa
         float cabA = 0, cabB = 0;   // 0 = plik użytkownika / wbudowana krzywa, 1..15 = wbudowane IR
         float busMode = 0, busThresh = -18.f, busRatio = 4.f, busAttack = 10.f, busRelease = 1500.f, busScHpf = 100.f, busMix = 1.f;
         float deHarsh = 0.f, albumTrack = 0.f;
+        // piec, jakość, mikrofon przy kolumnie
+        float ampModel = 0, ampPresence = 0.f, ampResonance = 0.f, ampSag = 0.3f, hq = 0;
+        float cabMic = 0, micPos = 0.5f, micDist = 0.3f, cabAlign = 1;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
@@ -86,6 +89,12 @@ namespace sxa
     inline const char* const kCompCharNames[] = { "Czysty (VCA)", "W stylu 1176 (FET)", "W stylu LA-2A (optyczny)",
                                                   "W stylu dbx 160 (VCA)", "W stylu vari-mu (lampowy)", "W stylu szyny SSL" };
     inline constexpr int kNumCompChars = 6;
+    inline const char* const kAmpNames[] = { "Albini (prosty, crunch)", "Brytyjski 800 (w stylu Marshalla JCM800)",
+                                             "Prostownik (w stylu Mesa Dual Rectifier)", "Amerykański czysty (w stylu Fendera Twin)",
+                                             "Basowy SVT (w stylu Ampega)" };
+    inline constexpr int kNumAmps = 5;
+    inline const char* const kCabMicNames[] = { "Jak w IR (SM57)", "SM57", "MD421", "Wstęgowy (w stylu R-121)", "Pojemnościowy (w stylu U87)" };
+    inline constexpr int kNumCabMics = 5;
     inline const char* const kConsoleNames[] = { "Ogólna", "Brytyjska (w stylu Neve)", "Amerykańska (w stylu API)", "Czysta in-line (w stylu SSL/Neotek)" };
     inline constexpr int kNumConsoles = 4;
 
@@ -100,6 +109,15 @@ namespace sxa
         { "cabBlend",   "Kolumna A/B",            "Kolumna A/B",  &Settings::cabBlend,   0, 1,     Kind::Blend },
         { "cabA",       "Kolumna A",              "Kolumna A",    &Settings::cabA,       0, 15,    Kind::Choice },
         { "cabB",       "Kolumna B",              "Kolumna B",    &Settings::cabB,       0, 15,    Kind::Choice },
+        { "ampModel",   "Wzmacniacz: model",      "Piec",         &Settings::ampModel,   0, kNumAmps - 1, Kind::Choice },
+        { "ampPresence","Wzmacniacz: presence",   "Presence",     &Settings::ampPresence,-1, 1,    Kind::Pan },
+        { "ampResonance","Wzmacniacz: resonance", "Resonance",    &Settings::ampResonance,-1, 1,   Kind::Pan },
+        { "ampSag",     "Wzmacniacz: zapadanie zasilania", "Sag", &Settings::ampSag,     0, 1,     Kind::Percent },
+        { "hq",         "Wysoka jakość przesteru (8x)", "Jakość 8x", &Settings::hq,      0, 1,     Kind::Toggle },
+        { "cabMic",     "Mikrofon przy kolumnie", "Mikrofon",     &Settings::cabMic,     0, kNumCabMics - 1, Kind::Choice },
+        { "micPos",     "Mikrofon: środek / brzeg", "Pozycja",    &Settings::micPos,     0, 1,     Kind::Percent },
+        { "micDist",    "Mikrofon: odległość",    "Odległość",    &Settings::micDist,    0, 1,     Kind::Percent },
+        { "cabAlign",   "Kolumny: wyrównanie fazy", "Wyrównaj fazę", &Settings::cabAlign, 0, 1,    Kind::Toggle },
 
         { "distComp",   "Źródło: kompresja",      "Kompresja",    &Settings::srcComp,    0, 1,     Kind::Percent },
         { "chorus",     "Chorus",                 "Chorus",       &Settings::chorus,     0, 1,     Kind::Percent },

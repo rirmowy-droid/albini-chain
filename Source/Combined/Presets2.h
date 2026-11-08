@@ -90,6 +90,30 @@ namespace sxa
           S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::ampInput, 6.f }, { &ST::ampDrive, 0.45f }, { &ST::srcComp, 0.3f }, { &ST::chorus, 0.3f },
                        { &ST::srcWidth, 0.4f }, { &ST::srcSmear, 0.2f }, { &ST::outputGain, 4.f } }) },
 
+        { "Gitara: Brytyjski piec w Seattle",
+          P ({ { &SP::drive, 0.35f }, { &SP::soft, 0.4f }, { &SP::outDb, -12.f } }),
+          S (Guitar, { { &ST::ampModel, 1.f }, { &ST::ampDrive, 0.5f }, { &ST::ampPresence, 0.2f }, { &ST::ampSag, 0.35f },
+                       { &ST::srcComp, 0.35f }, { &ST::srcWidth, 0.7f }, { &ST::srcLoose, 0.3f }, { &ST::srcSmear, 0.15f },
+                       { &ST::roomMix, 0.2f }, { &ST::tape, 0.4f }, { &ST::micDist, 0.25f } }) },
+
+        { "Gitara: Prostownik, ciężko i zwarcie",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::ampModel, 2.f }, { &ST::ampInput, 4.f }, { &ST::ampDrive, 0.6f }, { &ST::ampResonance, 0.35f },
+                       { &ST::ampPresence, -0.1f }, { &ST::ampSag, 0.5f }, { &ST::srcComp, 0.4f }, { &ST::srcWidth, 1.0f }, { &ST::srcLoose, 0.4f },
+                       { &ST::srcSmear, 0.15f }, { &ST::roomMix, 0.12f }, { &ST::tape, 0.4f }, { &ST::cabBlend, 0.45f }, { &ST::outputGain, 2.f } }) },
+
+        { "Gitara: Twin na krawędzi",
+          P ({ { &SP::drive, 0.5f }, { &SP::soft, 0.6f }, { &SP::outDb, -10.f } }),
+          S (Guitar, { { &ST::ampModel, 3.f }, { &ST::ampDrive, 0.55f }, { &ST::ampSag, 0.6f }, { &ST::cabMic, 4.f }, { &ST::micDist, 0.45f },
+                       { &ST::srcComp, 0.4f }, { &ST::chorus, 0.3f }, { &ST::srcWidth, 0.6f }, { &ST::srcSmear, 0.25f }, { &ST::roomMix, 0.25f },
+                       { &ST::outputGain, 2.f } }) },
+
+        { "Gitara: Wstęgowy przy brzegu, ciemno",
+          P ({ { &SP::drive, 0.78f }, { &SP::body, 0.3f } }),
+          S (Guitar, { { &ST::ampModel, 1.f }, { &ST::ampDrive, 0.25f }, { &ST::cabMic, 3.f }, { &ST::micPos, 0.75f }, { &ST::micDist, 0.2f },
+                       { &ST::srcComp, 0.5f }, { &ST::srcWidth, 0.9f }, { &ST::srcLoose, 0.4f }, { &ST::srcSmear, 0.2f }, { &ST::tape, 0.45f },
+                       { &ST::outputGain, 2.f } }) },
+
         // ---------------- BAS ----------------
         { "Bas: Młot",
           P ({ { &SP::drive, 0.4f }, { &SP::soft, 0.8f } }),
@@ -102,6 +126,10 @@ namespace sxa
         { "Bas: W smole (przester)",
           P ({ { &SP::drive, 0.7f }, { &SP::body, 0.3f }, { &SP::mix, 0.6f } }),
           S (Bass, { { &ST::pedalOn, 1.f }, { &ST::ampDrive, 0.3f }, { &ST::srcComp, 0.55f }, { &ST::tilt, -0.15f }, { &ST::tape, 0.45f } }) },
+
+        { "Bas: Piec SVT w piwnicy",
+          P ({}),
+          S (Bass, { { &ST::ampModel, 4.f }, { &ST::ampDrive, 0.45f }, { &ST::ampSag, 0.4f }, { &ST::srcComp, 0.55f }, { &ST::tape, 0.45f }, { &ST::console, 0.35f } }) },
 
         // ---------------- PERKUSJA ----------------
         { "Perkusja: Bębny w drewnianej sali",

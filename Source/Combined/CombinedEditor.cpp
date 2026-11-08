@@ -131,7 +131,28 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     footswitch.onStateChange();
 
     for (const auto& d : sxa::kPedal) addKnob (pedalKnobs, d.id, pl (d.name), true);
-    for (const char* id : { "ampInput", "ampDrive", "cabBlend" }) addKnob (ampKnobs, id, pl (shortNameFor (id)), true);
+    for (const char* id : { "ampInput", "ampDrive", "ampPresence", "ampResonance", "ampSag" }) addKnob (ampKnobs, id, pl (shortNameFor (id)), true);
+    for (const char* id : { "cabBlend", "micPos", "micDist" }) addKnob (cabKnobs, id, pl (shortNameFor (id)), true);
+    for (int i = 0; i < sxa::kNumAmps; ++i) ampModelBox.addItem (pl (sxa::kAmpNames[i]), i + 1);
+    ampModelAtt = std::make_unique<ComboAtt> (p.apvts, "ampModel", ampModelBox);
+    styleLabel (ampModelLabel, pl ("Piec"), seal);
+    ampModelLabel.setJustificationType (juce::Justification::centredBottom);
+    for (int i = 0; i < sxa::kNumCabMics; ++i) cabMicBox.addItem (pl (sxa::kCabMicNames[i]), i + 1);
+    cabMicAtt = std::make_unique<ComboAtt> (p.apvts, "cabMic", cabMicBox);
+    styleLabel (cabMicLabel, pl ("Mikrofon przy kolumnie"), seal);
+    cabMicLabel.setJustificationType (juce::Justification::centredBottom);
+    hqButton.setButtonText (pl ("Jakość 8x"));
+    hqButton.setTooltip (pl ("Kostka i piec liczone 8x zamiast 4x: gładsza góra przesteru, więcej pracy procesora"));
+    hqAtt = std::make_unique<ButtonAtt> (p.apvts, "hq", hqButton);
+    alignButton.setButtonText (pl ("Wyrównaj fazę A/B"));
+    alignButton.setTooltip (pl ("Przesuwa IR B tak, żeby zgrał się w fazie z A (mniej dziur przy mieszaniu)"));
+    alignAtt = std::make_unique<ButtonAtt> (p.apvts, "cabAlign", alignButton);
+    for (auto* b : { &hqButton, &alignButton })
+    {
+        b->setColour (juce::ToggleButton::textColourId, ink);
+        b->setColour (juce::ToggleButton::tickColourId, seal);
+        b->setColour (juce::ToggleButton::tickDisabledColourId, ink.withAlpha (0.5f));
+    }
     for (const char* id : { "distComp", "chorus", "chrate", "chdepth", "distWidth", "distLoose", "distSmear", "distSize", "slap" })
         addKnob (srcKnobs, id, pl (shortNameFor (id)), false);
     for (const char* id : { "roomMix", "roomSize", "roomPredelay", "roomCrush", "console", "tape", "tilt", "lowCut", "vocalSpace" })
@@ -153,14 +174,16 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     }
     lastIRFolder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
 
-    for (auto* list : { &pedalKnobs, &ampKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs })
+    for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs })
         for (auto* k : *list) { page1.push_back (&k->slider); page1.push_back (&k->label); }
-    for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch })
+    for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch,
+                                                             &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton })
         page1.push_back (c);
     for (auto& s : irSlots) { page1.push_back (&s.load); page1.push_back (&s.clear); page1.push_back (&s.choose); }
 
     pedalPanel  = { "KOSTKA STONOGA", {}, seal, true };
-    ampPanel    = { "WZMACNIACZ I KOLUMNA", {}, seal, true };
+    ampPanel    = { "WZMACNIACZ", {}, seal, true };
+    cabPanel    = { "KOLUMNA I MIKROFON", {}, seal, true };
     srcPanel    = { "NA PRZESTERZE", {}, seal.brighter (0.3f), false };
     studioPanel = { pl ("STUDIO ALBINIEGO: MIKROFON, SALA, KONSOLETA, TAŚMA"), {}, tapeCol, false };
     busPanel    = { pl ("NA CAŁOŚCI"), {}, tapeCol, false };
@@ -242,7 +265,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
 
     setResizable (true, true);
     setResizeLimits (960, 640, 1900, 1300);
-    setSize (1160, 730);
+    setSize (1160, 860);
     pageButtons[0].setToggleState (true, juce::dontSendNotification);
     setPage (0);
     timerCallback();
@@ -297,9 +320,11 @@ void CombinedEditor::updateVisibility (bool force)
     if (page == 0)
     {
         const bool pedal = sxa::hasPedal (src);
-        for (auto* list : { &pedalKnobs, &ampKnobs })
+        for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs })
             for (auto* k : *list) { k->slider.setVisible (pedal); k->label.setVisible (pedal); }
         footswitch.setVisible (pedal);
+        for (auto* c : std::initializer_list<juce::Component*> { &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton })
+            c->setVisible (pedal);
         for (auto& s : irSlots) { s.load.setEnabled (pedal); s.clear.setEnabled (pedal); s.choose.setEnabled (pedal); }
         noPedalLabel.setVisible (! pedal);
     }
@@ -390,8 +415,8 @@ void CombinedEditor::paint (juce::Graphics& g)
 
     if (page == 0)
     {
-        if (sxa::hasPedal (proc.getSource())) { drawPanel (g, pedalPanel); drawPanel (g, ampPanel); }
-        else drawPanel (g, { pl ("TO ŹRÓDŁO NIE MA KOSTKI"), pedalPanel.bounds.getUnion (ampPanel.bounds), seal, true });
+        if (sxa::hasPedal (proc.getSource())) { drawPanel (g, pedalPanel); drawPanel (g, ampPanel); drawPanel (g, cabPanel); }
+        else drawPanel (g, { pl ("TO ŹRÓDŁO NIE MA KOSTKI"), pedalPanel.bounds.getUnion (cabPanel.bounds), seal, true });
         for (const auto* p : { &srcPanel, &studioPanel, &busPanel, &outPanel, &irPanel }) drawPanel (g, *p);
     }
     else if (proc.getSource() == sxa::Mix)
@@ -505,22 +530,41 @@ void CombinedEditor::resized()
     // ====================== strona 1 ======================
     {
         auto a = content;
-        auto r1 = a.removeFromTop (rowH);
-        pedalPanel.bounds = r1.removeFromLeft ((int) (r1.getWidth() * 0.72f)).reduced (3);
-        ampPanel.bounds   = r1.reduced (3);
+        const int rowH1 = (content.getHeight() - 24) / 5;
+        pedalPanel.bounds = a.removeFromTop (rowH1).reduced (3);
         auto inner = pedalPanel.bounds.reduced (8, 4);
         const int cellW = inner.getWidth() / (pedalKnobs.size() + 1);
         footswitch.setBounds (inner.withTrimmedTop (22).removeFromLeft (cellW).reduced (6, 16));
         layoutKnobs (pedalKnobs, inner, 1);
-        layoutKnobs (ampKnobs, ampPanel.bounds.reduced (8, 4));
-        noPedalLabel.setBounds (pedalPanel.bounds.getUnion (ampPanel.bounds).reduced (20));
         a.removeFromTop (6);
 
-        srcPanel.bounds = a.removeFromTop (rowH).reduced (3);
+        // piec | kolumna i mikrofon
+        auto r2 = a.removeFromTop (rowH1);
+        ampPanel.bounds = r2.removeFromLeft ((int) (r2.getWidth() * 0.58f)).reduced (3);
+        cabPanel.bounds = r2.reduced (3);
+        {
+            auto ai = ampPanel.bounds.reduced (8, 4);
+            const int w = ai.getWidth() / (ampKnobs.size() + 2);
+            auto comboCell = ai.withWidth (w * 2);
+            layoutCombo (ampModelBox, ampModelLabel, comboCell);
+            hqButton.setBounds (comboCell.reduced (8, 0).removeFromBottom (28));
+            layoutKnobs (ampKnobs, ai, 2);
+
+            auto ci = cabPanel.bounds.reduced (8, 4);
+            const int cw = ci.getWidth() / (cabKnobs.size() + 2);
+            auto cabCell = ci.withWidth (cw * 2);
+            layoutCombo (cabMicBox, cabMicLabel, cabCell);
+            alignButton.setBounds (cabCell.reduced (8, 0).removeFromBottom (28));
+            layoutKnobs (cabKnobs, ci, 2);
+        }
+        noPedalLabel.setBounds (pedalPanel.bounds.getUnion (cabPanel.bounds).reduced (20));
+        a.removeFromTop (6);
+
+        srcPanel.bounds = a.removeFromTop (rowH1).reduced (3);
         layoutKnobs (srcKnobs, srcPanel.bounds.reduced (8, 4));
         a.removeFromTop (6);
 
-        studioPanel.bounds = a.removeFromTop (rowH).reduced (3);
+        studioPanel.bounds = a.removeFromTop (rowH1).reduced (3);
         auto sInner = studioPanel.bounds.reduced (8, 4);
         const int scw = sInner.getWidth() / (studioKnobs.size() + 2);
         layoutCombo (micBox, micLabel, sInner.withWidth (scw));
