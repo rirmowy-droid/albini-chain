@@ -90,9 +90,15 @@ Style (inspirowane brzmieniem płyt grunge’owych przełomu lat 80. i 90.):
 - **Łazienka w Bostonie** – Albini 1987: sucho z bliska, dużo sali, mało kompresji, dynamicznie
 - **Debiut '90** – ciężko, raczej sucho, dynamicznie
 
+**COFNIJ** (obok AUTO-MIKS) przywraca we wszystkich kopiach ustawienia sprzed ostatniego auto-miksu.
+
 Działa, gdy program muzyczny trzyma wtyczki w jednym procesie (domyślnie: FL Studio, Reaper, Ableton, Cubase). W aplikacji bez DAW auto-miks ustawia jedno źródło.
 
 **Presety:** 21 – gitara (np. „Garaż w Aberdeen”, „Ściana flaneli”, „Mokry chorus z Seattle”, „Smoła”, „Czarne słońce”), bas, perkusja, wokal i suma.
+
+**Limiter na wyjściu**: limiter z wyprzedzeniem 1,5 ms (sufit −1 dBFS, wykrywanie szczytów między próbkami, release zależny od materiału). Przy +12 dB ponad sufit zniekształcenia ok. 0,1% (stary limiter: 1,6%).
+
+**Oszczędzanie procesora**: gdy kostka Stonogi jest wyłączona i jej ogon wybrzmiał (~3 s), silnik kostki przestaje liczyć. Latencja się nie zmienia.
 
 Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/Later/`).
 
@@ -120,6 +126,8 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 | Output  | gain wyjściowy |
 
 ## IR-y kabinetu
+
+- **Wbudowane IR-y** (Stonoga x Albini): 15 odpowiedzi 4x12 z głośnikami V30 z darmowej paczki Jesters Brutal Pack (CC0), pogrupowane na *ciemne / średnie / jasne*. Wybierasz je z listy przy slocie A i B, a blend miesza oba. Domyślnie gitara: A = średnia 2, B = ciemna 2. Szczegóły i licencja: `Resources/IR/LICENSE-IR.md`.
 
 - **Load IR A / Load IR B**: pliki WAV/AIFF/FLAC. Mono IR, a ze stereo brany jest lewy kanał.
 - Ścieżki zapisują się w sesji DAW. Jeśli pliku zabraknie, UI pokaże `missing:`.

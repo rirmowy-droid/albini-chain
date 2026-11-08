@@ -1,5 +1,6 @@
 #include "CombinedEditor.h"
 #include "Presets2.h"
+#include "BundledIRs.h"
 
 namespace
 {
@@ -81,6 +82,11 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     autoMixButton.setColour (juce::TextButton::buttonColourId, flannel);
     autoMixButton.setColour (juce::TextButton::textColourOffId, paper);
     autoMixButton.onClick = [this] { proc.requestAutoMix(); };
+    undoButton.setButtonText (pl ("COFNIJ"));
+    undoButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff5a5048));
+    undoButton.setColour (juce::TextButton::textColourOffId, paper);
+    undoButton.setTooltip (pl ("Cofnij ostatni auto-miks we wszystkich kopiach wtyczki"));
+    undoButton.onClick = [this] { proc.requestUndoAutoMix(); };
 
     const char* pageNames[2] = { "TOR", "KOMPRESOR I MIKS" };
     for (int i = 0; i < 2; ++i)
@@ -99,7 +105,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     statusLabel.setColour (juce::Label::textColourId, juce::Colours::lightgrey);
     statusLabel.setFont (juce::FontOptions (12.5f));
     statusLabel.setJustificationType (juce::Justification::centredRight);
-    for (auto* c : std::initializer_list<juce::Component*> { &sourceBox, &presetBox, &styleBox, &autoMixButton, &statusLabel })
+    for (auto* c : std::initializer_list<juce::Component*> { &sourceBox, &presetBox, &styleBox, &autoMixButton, &undoButton, &statusLabel })
         addAndMakeVisible (c);
 
     // ====================== strona 1: tor ======================
@@ -136,7 +142,10 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     for (int s = 0; s < 2; ++s)
     {
         auto& slot = irSlots[(size_t) s];
-        slot.load.setButtonText (s == 0 ? "Wczytaj IR A" : "Wczytaj IR B");
+        slot.load.setButtonText (pl ("Plik…"));
+        slot.choose.addItem (pl ("Plik / wbudowana krzywa"), 1);
+        for (int i = 0; i < sxa::kNumBundledIRs; ++i) slot.choose.addItem (pl (sxa::kBundledIRs[i].name), i + 2);
+        slot.att = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (p.apvts, s == 0 ? "cabA" : "cabB", slot.choose);
         slot.load.onClick  = [this, s] { chooseIR (s); };
         slot.clear.onClick = [this, s] { proc.clearCabIR (s); timerCallback(); };
         slot.name.setColour (juce::Label::textColourId, juce::Colours::lightgrey);
@@ -148,7 +157,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
         for (auto* k : *list) { page1.push_back (&k->slider); page1.push_back (&k->label); }
     for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch })
         page1.push_back (c);
-    for (auto& s : irSlots) { page1.push_back (&s.load); page1.push_back (&s.clear); page1.push_back (&s.name); }
+    for (auto& s : irSlots) { page1.push_back (&s.load); page1.push_back (&s.clear); page1.push_back (&s.choose); }
 
     pedalPanel  = { "KOSTKA STONOGA", {}, seal, true };
     ampPanel    = { "WZMACNIACZ I KOLUMNA", {}, seal, true };
@@ -291,7 +300,7 @@ void CombinedEditor::updateVisibility (bool force)
         for (auto* list : { &pedalKnobs, &ampKnobs })
             for (auto* k : *list) { k->slider.setVisible (pedal); k->label.setVisible (pedal); }
         footswitch.setVisible (pedal);
-        for (auto& s : irSlots) { s.load.setEnabled (pedal); s.clear.setEnabled (pedal); }
+        for (auto& s : irSlots) { s.load.setEnabled (pedal); s.clear.setEnabled (pedal); s.choose.setEnabled (pedal); }
         noPedalLabel.setVisible (! pedal);
     }
 
@@ -307,9 +316,17 @@ void CombinedEditor::timerCallback()
 
     for (int s = 0; s < 2; ++s)
     {
-        const auto text = proc.getCabIRDisplayName (s);
-        if (irSlots[(size_t) s].name.getText() != text) irSlots[(size_t) s].name.setText (text, juce::dontSendNotification);
+        // pozycja 1 pokazuje nazwę własnego pliku (albo wbudowaną krzywą)
+        auto& box = irSlots[(size_t) s].choose;
+        if (box.getSelectedId() == 1)
+        {
+            const auto text = (s == 0 ? juce::String ("A: ") : juce::String ("B: ")) + proc.getCabIRDisplayName (s);
+            if (box.getItemText (0) != text) { box.changeItemText (1, text); box.setText (text, juce::dontSendNotification); }
+        }
+        else if (box.getItemText (0) != pl ("Plik / wbudowana krzywa"))
+            box.changeItemText (1, pl ("Plik / wbudowana krzywa"));
     }
+    undoButton.setEnabled (proc.canUndoAutoMix());
     const auto st = proc.getAutoMixStatus();
     if (statusLabel.getText() != st) statusLabel.setText (st, juce::dontSendNotification);
 
@@ -469,7 +486,9 @@ void CombinedEditor::resized()
     pageButtons[1].setBounds (tabs.removeFromLeft (160));
 
     auto top = header.removeFromTop (28);
-    autoMixButton.setBounds (top.removeFromRight (110));
+    undoButton.setBounds (top.removeFromRight (70));
+    top.removeFromRight (4);
+    autoMixButton.setBounds (top.removeFromRight (100));
     top.removeFromRight (6);
     const int flex = juce::jmax (300, top.getWidth() - 18);
     styleBox.setBounds (top.removeFromRight (flex * 42 / 100));
@@ -523,9 +542,11 @@ void CombinedEditor::resized()
             auto row = irInner.removeFromTop (h);
             irInner.removeFromTop (8);
             auto& slot = irSlots[(size_t) s];
-            slot.load.setBounds (row.removeFromLeft (110));
             slot.clear.setBounds (row.removeFromRight (28));
-            slot.name.setBounds (row.reduced (6, 0));
+            row.removeFromRight (4);
+            slot.load.setBounds (row.removeFromRight (64));
+            row.removeFromRight (4);
+            slot.choose.setBounds (row);
         }
     }
 

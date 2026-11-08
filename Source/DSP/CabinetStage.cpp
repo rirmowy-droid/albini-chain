@@ -74,6 +74,20 @@ bool CabinetStage::loadIR (int slot, const juce::File& file)
     return true;
 }
 
+bool CabinetStage::loadIRFromMemory (int slot, const void* data, size_t bytes, double maxSeconds)
+{
+    slot &= 1;
+    if (data == nullptr || bytes == 0)
+        return false;
+    conv[slot].loadImpulseResponse (data, bytes,
+                                    juce::dsp::Convolution::Stereo::no,
+                                    juce::dsp::Convolution::Trim::no,
+                                    (size_t) (maxSeconds * 48000.0),   // pliki są 48 kHz
+                                    juce::dsp::Convolution::Normalise::yes);
+    loaded[slot] = true;
+    return true;
+}
+
 void CabinetStage::clearIR (int slot)
 {
     loaded[slot & 1] = false;

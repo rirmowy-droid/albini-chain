@@ -110,3 +110,10 @@ target_sources(StonogaAlbini
         ${ALBINI_DSP_SOURCES})
 
 albini_configure(StonogaAlbini)
+
+# wbudowane IR kolumn (Jesters Brutal Pack 1.0, CC0 - Resources/IR/LICENSE-IR.md)
+file(GLOB ALBINI_IR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/Resources/IR/*.wav")
+juce_add_binary_data(AlbiniIRData SOURCES ${ALBINI_IR_FILES})
+set_target_properties(AlbiniIRData PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+target_link_libraries(StonogaAlbini PRIVATE AlbiniIRData)
+target_compile_definitions(StonogaAlbini PRIVATE ALBINI_HAS_BUNDLED_IR=1)

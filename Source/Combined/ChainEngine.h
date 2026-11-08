@@ -18,6 +18,7 @@
 #include "SlapEcho.h"
 #include "AlbumEq.h"
 #include "DeHarsh.h"
+#include "LookaheadLimiter.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -51,6 +52,7 @@ public:
     float getVocalDuckDb() const       { return duck.getVocalDuckDb(); }
     float getBusReductionDb() const    { return busComp.getGainReductionDb(); }
     float getDeHarshDb() const         { return deHarsh.getReductionDb(); }
+    float getLimiterDb() const         { return limiter.getReductionDb(); }
 
     // --- ciągłe dopasowanie barwy sumy: wolno uśredniane widmo (27 pasm) --------
     void getTrackedAlbumBandsDb (float* out) const;
@@ -80,6 +82,7 @@ private:
     stonoga::Engine pedal;
     juce::AudioBuffer<float> osDry, diBuf;
     juce::SmoothedValue<float> pedalMix;
+    double pedalIdleSeconds = 0.0;   // ile kostka jest wyłączona i cicha (oszczędzanie procesora)
     std::array<stonoga::Biquad, 2> diLp;
 
     AmpStage amp;
@@ -96,6 +99,7 @@ private:
     SlapEcho slap;
     AlbumEq album;
     DeHarsh deHarsh;
+    LookaheadLimiter limiter;
     stonoga::Biquad trackBp[AlbumEq::numBands];
     std::array<std::atomic<float>, AlbumEq::numBands> trackMs {};
     std::atomic<float> trackSeconds { 0.f };

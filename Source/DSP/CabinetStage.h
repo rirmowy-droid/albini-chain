@@ -22,6 +22,8 @@ public:
     void process (juce::dsp::AudioBlock<float>& block);
 
     bool loadIR (int slot, const juce::File& file);
+    /** IR z pamięci (wbudowane), przycięte do maxSeconds - bez pogłosu pomieszczenia. */
+    bool loadIRFromMemory (int slot, const void* data, size_t bytes, double maxSeconds = 0.2);
     void clearIR (int slot);
     bool hasIR (int slot) const { return loaded[slot & 1].load(); }
 

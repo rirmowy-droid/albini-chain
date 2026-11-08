@@ -53,7 +53,7 @@ private:
     juce::Label micLabel, consoleLabel, noPedalLabel;
     juce::TextButton footswitch;
     std::unique_ptr<ButtonAtt> footswitchAtt;
-    struct IRSlot { juce::TextButton load, clear { "x" }; juce::Label name; };
+    struct IRSlot { juce::TextButton load, clear { "x" }; juce::Label name; juce::ComboBox choose; std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> att; };
     std::array<IRSlot, 2> irSlots;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::File lastIRFolder;
@@ -85,6 +85,7 @@ private:
     juce::ComboBox sourceBox, presetBox, styleBox;
     std::unique_ptr<ComboAtt> sourceAtt, styleAtt;
     juce::TextButton autoMixButton { "AUTO-MIKS" };
+    juce::TextButton undoButton;
     juce::TextButton pageButtons[2];
     juce::Label statusLabel;
 

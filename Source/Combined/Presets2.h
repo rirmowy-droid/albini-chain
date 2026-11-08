@@ -28,6 +28,7 @@ namespace sxa
         Settings s;
         s.source = (float) src;
         s.consoleModel = 1;   // brytyjska konsoleta z transformatorami - na niej powstała większość tych płyt
+        if (src == Guitar) { s.cabA = 7; s.cabB = 2; s.cabBlend = 0.35f; }   // V30 średnia 2 + ciemna 2
         // rozsądne punkty wyjścia dla każdego źródła
         switch (src)
         {

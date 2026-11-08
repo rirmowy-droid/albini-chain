@@ -30,6 +30,8 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels)
     console.prepare (spec);
     tape.prepare (spec);
     guard.prepare (sampleRate, nch);
+    guard.ownLimiter = false;
+    limiter.prepare (sampleRate, nch);
     duck.prepare (sampleRate);
     slap.prepare (sampleRate);
     album.prepare (sampleRate);
@@ -60,7 +62,8 @@ float ChainEngine::getLatencyInSamples() const
     return (pedalOS ? pedalOS->getLatencyInSamples() : 0.f)
          + amp.getLatencyInSamples()
          + console.getLatencyInSamples()
-         + (float) tape.getLatencyInSamples();
+         + (float) tape.getLatencyInSamples()
+         + (float) limiter.getLatencyInSamples();
 }
 
 void ChainEngine::getMeasuredBandsDb (float* out8) const
@@ -105,7 +108,11 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     {
         auto up = pedalOS->processSamplesUp (block);
         const auto nUp = up.getNumSamples();
-        if (pedalSource)
+        // oszczędzanie: wyłączona kostka po ~3 s (gdy ogony wybrzmiały) przestaje liczyć
+        pedalMix.setTargetValue (s.pedalOn > 0.5f ? 1.f : 0.f);
+        const bool pedalSilent = s.pedalOn < 0.5f && ! pedalMix.isSmoothing() && pedalMix.getCurrentValue() <= 0.f;
+        pedalIdleSeconds = pedalSilent ? pedalIdleSeconds + (double) n / sr : 0.0;
+        if (pedalSource && pedalIdleSeconds < 3.0)
         {
             stonoga::Params p = pedalIn;
             for (size_t c = 0; c < nCh; ++c)
@@ -116,7 +123,6 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
             for (int c = 0; c < engCh; ++c) ptrs[(size_t) c] = up.getChannelPointer ((size_t) c);
             pedal.process (ptrs.data(), engCh, (int) nUp, p);
 
-            pedalMix.setTargetValue (s.pedalOn > 0.5f ? 1.f : 0.f);
             if (pedalMix.isSmoothing() || pedalMix.getTargetValue() < 1.f)
                 for (size_t i = 0; i < nUp; ++i)
                 {
@@ -298,6 +304,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     }
 
     guard.process (block, s.protect);
+    limiter.process (block, -1.f);
 
     // pomiar na samym wyjściu (do doregulowania głośności sumy)
     if (measuring.load())

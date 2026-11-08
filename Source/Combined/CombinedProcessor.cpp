@@ -1,6 +1,10 @@
 #include "CombinedProcessor.h"
 #include "CombinedEditor.h"
 #include "Presets2.h"
+#include "BundledIRs.h"
+#if ALBINI_HAS_BUNDLED_IR
+ #include "BinaryData.h"
+#endif
 
 namespace
 {
@@ -62,6 +66,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 else if (juce::String (def.id) == "compMode" || juce::String (def.id) == "busMode") ch = names (sxa::kCompModeNames, 2);
                 else if (juce::String (def.id) == "compChar" || juce::String (def.id) == "busCompChar") ch = names (sxa::kCompCharNames, sxa::kNumCompChars);
                 else if (juce::String (def.id) == "consoleModel") ch = names (sxa::kConsoleNames, sxa::kNumConsoles);
+                else if (juce::String (def.id) == "cabA" || juce::String (def.id) == "cabB")
+                {
+                    ch.add (pl ("Plik / wbudowana krzywa"));
+                    for (const auto& ir : sxa::kBundledIRs) ch.add (pl (ir.name));
+                }
                 else ch = names (sxa::kStyleNames, sxa::kNumStyles);
                 v.push_back (std::make_unique<juce::AudioParameterChoice> (id, pl (def.name), ch, (int) dv));
                 break;
@@ -101,6 +110,7 @@ CombinedProcessor::CombinedProcessor()
 
     registrySlot = sxa::MixRegistry::get().add();
     seenGeneration = sxa::MixRegistry::get().currentGeneration();
+    seenUndo = sxa::MixRegistry::get().currentUndoGeneration();
     startTimerHz (10);
 }
 
@@ -244,9 +254,48 @@ void CombinedProcessor::timerCallback()
     const double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
     const int gen = reg.currentGeneration();
 
+    // wbudowane IR kolumn: wczytaj, gdy wybór się zmienił (wątek wiadomości)
+    for (int slot = 0; slot < 2; ++slot)
+    {
+        const int idx = (int) std::round (paramValue (slot == 0 ? "cabA" : "cabB"));
+        if (idx == loadedCab[(size_t) slot]) continue;
+        loadedCab[(size_t) slot] = idx;
+        if (idx > 0) loadBundledIR (slot, idx - 1);
+        else
+        {
+            const auto path = apvts.state.getProperty (irProperty (slot)).toString();
+            if (path.isNotEmpty() && juce::File (path).existsAsFile()) engine.cabinet().loadIR (slot, juce::File (path));
+            else engine.cabinet().clearIR (slot);
+        }
+    }
+
+    // cofnij auto-miks (we wszystkich kopiach naraz)
+    if (reg.currentUndoGeneration() != seenUndo)
+    {
+        seenUndo = reg.currentUndoGeneration();
+        if (hasSnapshot)
+        {
+            if (amState == AM::Listening) reg.pendingTracks.fetch_sub (1);
+            if (amState == AM::Listening || amState == AM::WaitingForPeers) reg.pendingEq.fetch_sub (1);
+            engine.stopMeasuring();
+            amState = AM::Idle;
+            apvts.replaceState (snapshot.createCopy());
+            restoreCabIRsFromState();
+            restoreAlbumFromState();
+            loadedCab = { -1, -1 };
+            hasSnapshot = false;
+            autoStatus = pl ("Auto-miks cofnięty – ustawienia jak przed nim");
+        }
+    }
+
     if (gen != seenGeneration)
     {
         seenGeneration = gen;
+        if (amState == AM::Idle)   // zapamiętaj stan sprzed auto-miksu (do cofnięcia)
+        {
+            snapshot = apvts.copyState();
+            hasSnapshot = true;
+        }
         amStyle = juce::jlimit (0, sxa::kNumStyles - 1, reg.currentStyle());
         setParam ("style", (float) amStyle);
         amStart = now;
@@ -446,17 +495,40 @@ bool CombinedProcessor::loadCabIR (int slot, const juce::File& file)
 {
     if (! engine.cabinet().loadIR (slot, file)) return false;
     apvts.state.setProperty (irProperty (slot), file.getFullPathName(), nullptr);
+    loadedCab[(size_t) slot] = 0;                       // własny plik zamiast wbudowanej kolumny
+    setParam (slot == 0 ? "cabA" : "cabB", 0.f);
     return true;
+}
+
+bool CombinedProcessor::loadBundledIR (int slot, int index)
+{
+   #if ALBINI_HAS_BUNDLED_IR
+    if (index < 0 || index >= sxa::kNumBundledIRs) return false;
+    for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
+        if (juce::String (BinaryData::originalFilenames[i]) == sxa::kBundledIRs[index].file)
+        {
+            int size = 0;
+            const char* data = BinaryData::getNamedResource (BinaryData::namedResourceList[i], size);
+            return engine.cabinet().loadIRFromMemory (slot, data, (size_t) size);
+        }
+   #else
+    juce::ignoreUnused (slot, index);
+   #endif
+    return false;
 }
 
 void CombinedProcessor::clearCabIR (int slot)
 {
     engine.cabinet().clearIR (slot);
     apvts.state.setProperty (irProperty (slot), juce::String(), nullptr);
+    loadedCab[(size_t) slot] = 0;
+    setParam (slot == 0 ? "cabA" : "cabB", 0.f);
 }
 
 juce::String CombinedProcessor::getCabIRDisplayName (int slot) const
 {
+    const int idx = (int) std::round (paramValue (slot == 0 ? "cabA" : "cabB"));
+    if (idx > 0 && idx <= sxa::kNumBundledIRs) return pl (sxa::kBundledIRs[idx - 1].name);
     const auto path = apvts.state.getProperty (irProperty (slot)).toString();
     if (path.isEmpty()) return pl ("(brak – wbudowana kolumna)");
     const juce::File f (path);
@@ -516,6 +588,7 @@ void CombinedProcessor::setStateInformation (const void* data, int sizeInBytes)
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
             restoreCabIRsFromState();
             restoreAlbumFromState();
+            loadedCab = { -1, -1 };   // timer dociągnie wbudowane kolumny
         }
 }
 

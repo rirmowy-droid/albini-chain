@@ -47,6 +47,7 @@ namespace sxa
         float albumAmt = 1.f;
 
         // suma: klej (pełny kompresor), wygładzanie góry, ciągłe dopasowanie barwy
+        float cabA = 0, cabB = 0;   // 0 = plik użytkownika / wbudowana krzywa, 1..15 = wbudowane IR
         float busMode = 0, busThresh = -18.f, busRatio = 4.f, busAttack = 10.f, busRelease = 1500.f, busScHpf = 100.f, busMix = 1.f;
         float deHarsh = 0.f, albumTrack = 0.f;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
@@ -97,6 +98,8 @@ namespace sxa
         { "ampInput",   "Wzmacniacz: wejście",    "Wejście",      &Settings::ampInput, -12, 24,    Kind::Decibel },
         { "ampDrive",   "Wzmacniacz: drive",      "Drive",        &Settings::ampDrive,   0, 1,     Kind::Percent },
         { "cabBlend",   "Kolumna A/B",            "Kolumna A/B",  &Settings::cabBlend,   0, 1,     Kind::Blend },
+        { "cabA",       "Kolumna A",              "Kolumna A",    &Settings::cabA,       0, 15,    Kind::Choice },
+        { "cabB",       "Kolumna B",              "Kolumna B",    &Settings::cabB,       0, 15,    Kind::Choice },
 
         { "distComp",   "Źródło: kompresja",      "Kompresja",    &Settings::srcComp,    0, 1,     Kind::Percent },
         { "chorus",     "Chorus",                 "Chorus",       &Settings::chorus,     0, 1,     Kind::Percent },

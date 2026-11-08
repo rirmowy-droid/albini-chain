@@ -114,6 +114,8 @@ namespace sxa
         int countSource (int source) const { int t = 0, i = 0; count (-1, source, t, i); return t; }
 
         void request (int style) { requestedStyle = style; generation.fetch_add (1); }
+        void requestUndo() { undoGeneration.fetch_add (1); }
+        int  currentUndoGeneration() const { return undoGeneration.load(); }
         int  currentGeneration() const { return generation.load(); }
         int  currentStyle() const { return requestedStyle.load(); }
 
@@ -130,7 +132,7 @@ namespace sxa
         std::array<Slot, maxSlots> slots;
         std::mutex mutex;
         int orderCounter = 0;
-        std::atomic<int> generation { 0 }, requestedStyle { 0 };
+        std::atomic<int> generation { 0 }, requestedStyle { 0 }, undoGeneration { 0 };
     };
 
     /** Ustawienia studia dla jednego źródła w danym stylu. */

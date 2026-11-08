@@ -40,11 +40,14 @@ public:
 
     // --- IR kolumny (wątek wiadomości) ------------------------------------
     bool loadCabIR (int slot, const juce::File& file);
+    bool loadBundledIR (int slot, int index);
     void clearCabIR (int slot);
     juce::String getCabIRDisplayName (int slot) const;
 
     // --- auto-miks (wątek wiadomości) ---------------------------------------
     void requestAutoMix();
+    void requestUndoAutoMix() { sxa::MixRegistry::get().requestUndo(); }
+    bool canUndoAutoMix() const { return hasSnapshot; }
     juce::String getAutoMixStatus() const { return autoStatus; }
     int getSource() const { return (int) std::round (paramValue ("source")); }
 
@@ -85,6 +88,10 @@ private:
     std::array<float, sxa::kNumEqBands> myBands {};
     std::array<float, AlbumEq::numBands> albumTarget {};
     int trackTicks = 0;
+    std::array<int, 2> loadedCab { -1, -1 };
+    juce::ValueTree snapshot;
+    bool hasSnapshot = false;
+    int seenUndo = 0;
     juce::String lastGainText;
     static int eqParamIndex (int band);
     juce::String autoStatus { juce::String::fromUTF8 ("Auto-miks: wybierz styl i kliknij") };

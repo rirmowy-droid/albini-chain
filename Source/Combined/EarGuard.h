@@ -67,6 +67,7 @@ private:
         }
 
         float y = s.shelf.process (o) * s.gain;
+        if (! ownLimiter) return y;            // szczyty łapie limiter z wyprzedzeniem za nami
 
         const float ceil = 0.89f, a = std::fabs (y);
         s.limEnv = a > s.limEnv ? a : s.limEnv + (a - s.limEnv) * (1.f / (0.12f * sr));
@@ -74,6 +75,9 @@ private:
         return ceil * std::tanh (y / ceil);
     }
 
+public:
+    bool ownLimiter = true;
+private:
     float sr = 48000.f;
     std::vector<Chan> ch;
 };
