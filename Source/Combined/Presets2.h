@@ -34,7 +34,7 @@ namespace sxa
             case Bass:   s.pedalOn = 0; s.ampDrive = 0.25f; s.srcComp = 0.5f; s.srcWidth = 0; s.srcSmear = 0; s.roomMix = 0.05f; s.width = 0; s.smear = 0; s.lowCut = 30; break;
             case Drums:  s.pedalOn = 0; s.mic = MicCondenser; s.compChar = 1; s.roomPredelay = 12; s.srcComp = 0.35f; s.srcWidth = 0; s.srcSmear = 0.1f; s.roomMix = 0.3f; s.roomSize = 0.5f; s.roomCrush = 0.5f; s.width = 0.2f; s.smear = 0.05f; break;
             case Vocals: s.pedalOn = 0; s.mic = MicDynamic; s.compChar = 2; s.srcComp = 0.6f; s.srcWidth = 0.15f; s.srcSmear = 0.25f; s.roomMix = 0.1f; s.roomSize = 0.3f; s.width = 0; s.smear = 0.1f; break;
-            case Mix:    s.pedalOn = 0; s.busCompChar = 5; s.srcComp = 0; s.srcWidth = 0; s.srcSmear = 0; s.roomMix = 0; s.busComp = 0.35f; s.width = 0.3f; s.smear = 0.05f; break;
+            case Mix:    s.pedalOn = 0; s.busCompChar = 5; s.deHarsh = 0.3f; s.busScHpf = 100.f; s.srcComp = 0; s.srcWidth = 0; s.srcSmear = 0; s.roomMix = 0; s.busComp = 0.35f; s.width = 0.3f; s.smear = 0.05f; break;
             default: break;
         }
         for (const auto& c : ch) s.*(c.first) = c.second;

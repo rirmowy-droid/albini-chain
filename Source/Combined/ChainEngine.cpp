@@ -33,6 +33,9 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels)
     duck.prepare (sampleRate);
     slap.prepare (sampleRate);
     album.prepare (sampleRate);
+    deHarsh.prepare (sampleRate);
+    for (int b = 0; b < AlbumEq::numBands; ++b) { trackBp[b].bandpass ((float) sampleRate, AlbumEq::bandHz (b), AlbumEq::q); trackMs[(size_t) b] = 0.f; }
+    trackSeconds = 0.f;
     for (int b = 0; b < AlbumEq::numBands; ++b) albumBp[b].bandpass ((float) sampleRate, AlbumEq::bandHz (b), AlbumEq::q);
     for (int b = 0; b < sxa::kNumEqBands; ++b) bandBp[b].bandpass ((float) sampleRate, sxa::kEqHz[b], 1.4f);
 
@@ -64,6 +67,11 @@ void ChainEngine::getMeasuredBandsDb (float* out8) const
 {
     for (int b = 0; b < sxa::kNumEqBands; ++b)
         out8[b] = 10.f * std::log10 (bandMs[(size_t) b].load() + 1e-12f);
+}
+
+void ChainEngine::getTrackedAlbumBandsDb (float* out) const
+{
+    for (int b = 0; b < AlbumEq::numBands; ++b) out[b] = 10.f * std::log10 (trackMs[(size_t) b].load() + 1e-15f);
 }
 
 void ChainEngine::getMeasuredAlbumBandsDb (float* out26) const
@@ -182,12 +190,42 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     // --- na całości -----------------------------------------------------------------
     busComp.setCharacter ((int) s.busCompChar);
     busComp.setAmount (s.busComp);
+    busComp.setSidechainHighpass (s.busScHpf);
+    busComp.setAutoMakeup (true);
+    busComp.setManual (s.busMode > 0.5f, s.busThresh, s.busRatio, s.busAttack, s.busRelease, 0.f, s.busMix, false);
     busComp.process (block);
     busSpace.set (s.smear, s.width, 0.f, 0.55f);
     busSpace.process (block);
 
     // --- barwa płyty (tylko na sumie) ----------------------------------------------
     if (source == sxa::Mix) album.process (block, s.albumAmt);
+
+    // --- wygładzanie góry (dynamiczne dołki w 2,5-14 kHz) -------------------------
+    deHarsh.process (block, s.deHarsh);
+
+    // --- ciągłe dopasowanie: wolno uśredniane widmo sumy (stała czasowa ~6 s) -------
+    if (source == sxa::Mix && s.albumTrack > 0.5f)
+    {
+        const auto* l = block.getChannelPointer (0);
+        const auto* r = nCh > 1 ? block.getChannelPointer (1) : l;
+        double e = 0.0, bandE[AlbumEq::numBands] {};
+        for (size_t i = 0; i < n; ++i)
+        {
+            const float m = 0.5f * (l[i] + r[i]);
+            e += (double) m * m;
+            for (int b = 0; b < AlbumEq::numBands; ++b) { const float y = trackBp[b].process (m); bandE[b] += (double) y * y; }
+        }
+        if (e / (double) n > 1e-6)   // tylko gdy coś gra
+        {
+            const float k = 1.f - std::exp (-(float) n / (6.f * (float) sr));
+            for (int b = 0; b < AlbumEq::numBands; ++b)
+            {
+                const float cur = trackMs[(size_t) b].load();
+                trackMs[(size_t) b] = cur + k * ((float) (bandE[b] / (double) n) - cur);
+            }
+            trackSeconds = trackSeconds.load() + (float) n / (float) sr;
+        }
+    }
 
     // --- pomiar -------------------------------------------------------------------------
     if (measureReset.exchange (false))

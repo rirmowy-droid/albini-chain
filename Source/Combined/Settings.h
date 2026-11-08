@@ -45,6 +45,10 @@ namespace sxa
         // modele sprzętu i techniki z lat 90.
         float consoleModel = 0, busCompChar = 0, compAllButtons = 0, roomPredelay = 0.f, slap = 0.f;
         float albumAmt = 1.f;
+
+        // suma: klej (pełny kompresor), wygładzanie góry, ciągłe dopasowanie barwy
+        float busMode = 0, busThresh = -18.f, busRatio = 4.f, busAttack = 10.f, busRelease = 1500.f, busScHpf = 100.f, busMix = 1.f;
+        float deHarsh = 0.f, albumTrack = 0.f;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
@@ -129,6 +133,15 @@ namespace sxa
         { "roomPredelay","Sala: opóźnienie",      "Opóźnienie sali", &Settings::roomPredelay, 0, 40, Kind::Millis },
         { "slap",       "Krótkie echo (slap)",    "Slap",         &Settings::slap,       0, 1,     Kind::Percent },
         { "albumAmt",   "Barwa płyty: siła",      "Barwa płyty",  &Settings::albumAmt,   0, 1,     Kind::Percent },
+        { "albumTrack", "Barwa płyty: ciągłe dopasowanie", "Ciągłe dopasowanie", &Settings::albumTrack, 0, 1, Kind::Toggle },
+        { "deHarsh",    "Wygładzanie góry",       "Wygładzanie góry", &Settings::deHarsh, 0, 1,     Kind::Percent },
+        { "busMode",    "Klej: tryb",             "Tryb",         &Settings::busMode,    0, 1,     Kind::Choice },
+        { "busThresh",  "Klej: próg",             "Próg",         &Settings::busThresh, -40, 0,    Kind::Decibel },
+        { "busRatio",   "Klej: ratio",            "Ratio",        &Settings::busRatio,   1, 20,    Kind::Ratio },
+        { "busAttack",  "Klej: atak",             "Atak",         &Settings::busAttack,  0.1f, 100, Kind::Millis },
+        { "busRelease", "Klej: puszczanie (max = auto)", "Puszczanie", &Settings::busRelease, 50, 1500, Kind::Millis },
+        { "busScHpf",   "Klej: filtr sidechain",  "Filtr SC",     &Settings::busScHpf,  20, 300,   Kind::Hertz },
+        { "busMix",     "Klej: mix (równoległa)", "Mix",          &Settings::busMix,     0, 1,     Kind::Percent },
         { "compThresh", "Kompresor: próg",        "Próg",         &Settings::compThresh,-40, 0,    Kind::Decibel },
         { "compRatio",  "Kompresor: ratio",       "Ratio",        &Settings::compRatio,  1, 20,    Kind::Ratio },
         { "compAttack", "Kompresor: atak",        "Atak",         &Settings::compAttack, 0.1f, 100, Kind::Millis },

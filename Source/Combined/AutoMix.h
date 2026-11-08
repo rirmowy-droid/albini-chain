@@ -250,6 +250,12 @@ namespace sxa
         s.roomPredelay = g.predelayMs; s.slap = g.slap;
         s.compMode = 0.f;   // auto-miks pracuje na „jednej gałce”: progi zależą od gałki, nie od poziomu sesji
         if (style == 1 || style == 5) s.busComp = 0.f;   // Albini: bez kompresji na sumie
+        if (src == Mix)
+        {
+            s.busMode = 0.f; s.busScHpf = 100.f; s.busMix = 1.f;
+            static const float harsh[kNumStyles] = { 0.35f, 0.25f, 0.35f, 0.35f, 0.35f, 0.25f, 0.35f };
+            s.deHarsh = harsh[style];
+        }
 
         if (src == Guitar)
         {
@@ -322,7 +328,7 @@ namespace sxa
     }
 
     /** Brzmienie płyt zmierzone z pełnych plików stereo (tym samym miernikiem co wtyczka):
-        barwa w 26 pasmach co 1/3 oktawy (40 Hz - 12,5 kHz, dB względem średniej 60 Hz - 8 kHz),
+        barwa w 27 pasmach co 1/3 oktawy (40 Hz - 16 kHz, dB względem średniej 60 Hz - 8 kHz),
         szerokość stereo (strona względem środka) i głośność (średnia K).
           Seattle '91:        Nevermind - Smells Like Teen Spirit (ze składanki z 2002 r.)
           Chicago:            In Utero - Scentless Apprentice, Milk It
@@ -331,15 +337,15 @@ namespace sxa
           Czarne słońce:      Black Hole Sun (master ze składanki z 2023 r.)
           Łazienka w Bostonie: Surfer Rosa - Where Is My Mind?
           Debiut '90:         Facelift - Love, Hate, Love */
-    struct AlbumCurve { bool has; float db[26]; float sideToMidDb; float loudDb; const char* name; };
+    struct AlbumCurve { bool has; float db[27]; float sideToMidDb; float loudDb; const char* name; };
     inline const AlbumCurve kAlbumCurves[kNumStyles] = {
-        { true, { -3.6f, -0.9f, 2.4f, 3.6f, 4.2f, 3.8f, 2.1f, 2.4f, -0.5f, -2.3f, -2.8f, -2.3f, -1.8f, -0.8f, -1.1f, -0.3f, 1.9f, 1.6f, 1.8f, 0.6f, 0.2f, -1.5f, -4.2f, -6.8f, -10.0f, -13.1f }, -7.4f, -14.5f, "Nevermind" },
-        { true, { -4.3f, -0.6f, 3.5f, 6.2f, 7.4f, 7.1f, 5.3f, 2.5f, -0.3f, -2.1f, -3.0f, -3.0f, -1.9f, -1.1f, -1.2f, -1.4f, 0.1f, 1.4f, 0.9f, -1.0f, -2.4f, -4.4f, -5.5f, -7.0f, -9.8f, -14.4f }, -5.2f, -12.6f, "In Utero" },
-        { true, { -0.9f, 3.5f, 2.4f, 0.9f, -0.4f, -0.3f, 0.6f, 1.5f, 1.6f, -0.1f, 0.3f, 2.6f, 4.0f, 2.6f, 1.4f, 1.3f, 1.3f, 0.7f, 0.7f, -1.1f, -2.9f, -4.3f, -5.8f, -7.1f, -8.5f, -13.2f }, -8.4f, -14.3f, "Ten" },
-        { true, { -5.9f, -2.2f, 1.9f, 2.9f, 1.8f, 1.4f, 1.4f, 1.2f, 1.2f, 1.8f, 0.9f, 1.1f, 2.0f, 1.6f, 1.2f, 1.1f, 1.6f, 1.1f, -0.3f, -1.6f, -2.4f, -5.0f, -6.7f, -8.2f, -11.0f, -14.5f }, -8.8f, -11.6f, "Dirt" },
-        { true, { -4.9f, -0.3f, 2.8f, 2.9f, 4.4f, 4.0f, 2.2f, 2.4f, 1.4f, -0.2f, 0.0f, 0.2f, 0.8f, 0.6f, 0.2f, -1.0f, -1.5f, -1.0f, -0.3f, -1.6f, -2.8f, -4.2f, -3.7f, -5.7f, -9.7f, -15.0f }, -6.6f, -10.4f, "Black Hole Sun" },
-        { true, { -3.5f, 1.1f, 2.3f, 1.6f, 3.7f, 4.0f, 3.3f, 3.7f, 2.0f, 2.6f, -0.2f, -0.2f, 4.0f, 0.5f, -0.8f, -1.0f, -1.1f, -0.4f, -1.5f, -1.8f, -2.7f, -4.6f, -6.0f, -7.4f, -8.9f, -11.7f }, -5.2f, -19.9f, "Surfer Rosa" },
-        { true, { -6.9f, -3.0f, 0.5f, 1.3f, 1.5f, 3.4f, 2.4f, 1.6f, 2.0f, 1.4f, -0.5f, -0.1f, 2.7f, 3.3f, 1.8f, 1.0f, 1.1f, 0.8f, 0.8f, -0.4f, -2.5f, -5.4f, -7.5f, -9.3f, -11.9f, -16.3f }, -6.2f, -14.9f, "Facelift" },
+        { true, { -3.6f, -0.9f, 2.4f, 3.6f, 4.2f, 3.8f, 2.1f, 2.4f, -0.5f, -2.3f, -2.8f, -2.3f, -1.8f, -0.8f, -1.1f, -0.3f, 1.9f, 1.6f, 1.8f, 0.6f, 0.2f, -1.5f, -4.2f, -6.8f, -10.0f, -13.1f, -20.5f }, -7.4f, -14.5f, "Nevermind" },
+        { true, { -4.3f, -0.6f, 3.5f, 6.2f, 7.4f, 7.1f, 5.3f, 2.5f, -0.3f, -2.1f, -3.0f, -3.0f, -1.9f, -1.1f, -1.2f, -1.4f, 0.1f, 1.4f, 0.9f, -1.0f, -2.4f, -4.4f, -5.5f, -7.0f, -9.8f, -14.4f, -21.8f }, -5.2f, -12.6f, "In Utero" },
+        { true, { -0.9f, 3.5f, 2.4f, 0.9f, -0.4f, -0.3f, 0.6f, 1.5f, 1.6f, -0.1f, 0.3f, 2.6f, 4.0f, 2.6f, 1.4f, 1.3f, 1.3f, 0.7f, 0.7f, -1.1f, -2.9f, -4.3f, -5.8f, -7.1f, -8.5f, -13.2f, -20.6f }, -8.4f, -14.3f, "Ten" },
+        { true, { -5.9f, -2.2f, 1.9f, 2.9f, 1.8f, 1.4f, 1.4f, 1.2f, 1.2f, 1.8f, 0.9f, 1.1f, 2.0f, 1.6f, 1.2f, 1.1f, 1.6f, 1.1f, -0.3f, -1.6f, -2.4f, -5.0f, -6.7f, -8.2f, -11.0f, -14.5f, -20.5f }, -8.8f, -11.6f, "Dirt" },
+        { true, { -4.9f, -0.3f, 2.8f, 2.9f, 4.4f, 4.0f, 2.2f, 2.4f, 1.4f, -0.2f, 0.0f, 0.2f, 0.8f, 0.6f, 0.2f, -1.0f, -1.5f, -1.0f, -0.3f, -1.6f, -2.8f, -4.2f, -3.7f, -5.7f, -9.7f, -15.0f, -21.1f }, -6.6f, -10.4f, "Black Hole Sun" },
+        { true, { -3.5f, 1.1f, 2.3f, 1.6f, 3.7f, 4.0f, 3.3f, 3.7f, 2.0f, 2.6f, -0.2f, -0.2f, 4.0f, 0.5f, -0.8f, -1.0f, -1.1f, -0.4f, -1.5f, -1.8f, -2.7f, -4.6f, -6.0f, -7.4f, -8.9f, -11.7f, -20.6f }, -5.2f, -19.9f, "Surfer Rosa" },
+        { true, { -6.9f, -3.0f, 0.5f, 1.3f, 1.5f, 3.4f, 2.4f, 1.6f, 2.0f, 1.4f, -0.5f, -0.1f, 2.7f, 3.3f, 1.8f, 1.0f, 1.1f, 0.8f, 0.8f, -0.4f, -2.5f, -5.4f, -7.5f, -9.3f, -11.9f, -16.3f, -23.1f }, -6.2f, -14.9f, "Facelift" },
     };
 
     /** Pasma 26-pasmowego miernika liczone do średniej (jak w krzywych): 60 Hz - 8 kHz. */
@@ -347,25 +353,33 @@ namespace sxa
 
     /** Docelowa korekta sumy (dB w środkach 26 pasm): różnica do płyty, wygładzona
         (żeby nie gonić pojedynczych dźwięków utworu), bez zmiany głośności, maks. +-6 dB. */
-    inline bool computeAlbumTarget (int style, const float* measured26, float* target26)
+    inline bool computeAlbumTarget (int style, const float* measured, float* target)
     {
+        constexpr int N = 27;
         const auto& c = kAlbumCurves[style];
-        if (! c.has) { for (int b = 0; b < 26; ++b) target26[b] = 0.f; return false; }
+        if (! c.has) { for (int b = 0; b < N; ++b) target[b] = 0.f; return false; }
         float mean = 0.f; int n = 0;
-        for (int b = 0; b < 26; ++b) if (inAlbumMeanRange (b)) { mean += measured26[b]; ++n; }
+        for (int b = 0; b < N; ++b) if (inAlbumMeanRange (b)) { mean += measured[b]; ++n; }
         mean /= (float) n;
-        float diff[26];
-        for (int b = 0; b < 26; ++b) diff[b] = c.db[b] - (measured26[b] - mean);
-        float sm[26];
-        for (int b = 0; b < 26; ++b)
+        float diff[N];
+        for (int b = 0; b < N; ++b) diff[b] = c.db[b] - (measured[b] - mean);
+        float sm[N];
+        for (int b = 0; b < N; ++b)
         {
-            const float l = diff[std::max (0, b - 1)], r = diff[std::min (25, b + 1)];
+            const float l = diff[std::max (0, b - 1)], r = diff[std::min (N - 1, b + 1)];
             sm[b] = 0.25f * l + 0.5f * diff[b] + 0.25f * r;
         }
         float dmean = 0.f; n = 0;
-        for (int b = 0; b < 26; ++b) if (inAlbumMeanRange (b)) { dmean += sm[b]; ++n; }
+        for (int b = 0; b < N; ++b) if (inAlbumMeanRange (b)) { dmean += sm[b]; ++n; }
         dmean /= (float) n;
-        for (int b = 0; b < 26; ++b) target26[b] = std::max (-6.f, std::min (6.f, sm[b] - dmean));
+        for (int b = 0; b < N; ++b)
+        {
+            // najwyższa góra: przycinać wolno, podbijać tylko trochę (MP3 referencji ma obciętą
+            // samą górę, a mocne podbicie > 9 kHz to proszenie się o syczenie)
+            const float hz = 31.5f * std::pow (2.f, (float) (b + 1) / 3.f);
+            const float maxBoost = hz > 9000.f ? 1.5f : 6.f;
+            target[b] = std::max (-6.f, std::min (maxBoost, sm[b] - dmean));
+        }
         return true;
     }
 

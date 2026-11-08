@@ -7,7 +7,7 @@
 #include <cmath>
 #include "../Stonoga/StonogaDSP.h"
 
-/** Korektor „barwa płyty”: 26 pasm co 1/3 oktawy (40 Hz - 12,5 kHz).
+/** Korektor „barwa płyty”: 27 pasm co 1/3 oktawy (40 Hz - 16 kHz).
 
     Dopasowanie (fit) liczy wzmocnienia tak, żeby CAŁA kaskada filtrów dała
     zadaną krzywą w środkach pasm - sąsiednie pasma się nakładają, więc samo
@@ -18,7 +18,7 @@
 class AlbumEq
 {
 public:
-    static constexpr int numBands = 26;
+    static constexpr int numBands = 27;
     static constexpr float q = 4.32f;            // szerokość 1/3 oktawy
 
     static float bandHz (int b) { return 31.5f * std::pow (2.f, (float) (b + 1) / 3.f); }   // b=0 -> 40 Hz
@@ -87,7 +87,7 @@ public:
                 for (int b = 0; b < numBands; ++b)
                     resp[k] += peakResponseDb (sampleRate, bandHz (b), q, gainsOut[b], bandHz (k));
             for (int b = 0; b < numBands; ++b)
-                gainsOut[b] = juce::jlimit (-limitDb, limitDb, gainsOut[b] + 0.7f * (targetDb[b] - resp[b]));
+                gainsOut[b] = juce::jlimit (-limitDb, bandHz (b) > 9000.f ? 2.f : limitDb, gainsOut[b] + 0.7f * (targetDb[b] - resp[b]));
         }
     }
 

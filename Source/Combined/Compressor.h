@@ -3,6 +3,7 @@
 #include <juce_dsp/juce_dsp.h>
 #include <atomic>
 #include <cmath>
+#include "../Stonoga/StonogaDSP.h"
 
 /** Kompresor z charakterami w stylu klasycznych urządzeń studyjnych.
 
@@ -48,6 +49,17 @@ public:
 
     void setAmount (float a) { amount.setTargetValue (juce::jlimit (0.f, 1.f, a)); }
     void setCharacter (int c) { chr = juce::jlimit (0, (int) NumCharacters - 1, c); }
+
+    /** Ręczny tryb z automatycznym wyrównaniem głośności (dla kleju sumy). */
+    void setAutoMakeup (bool on) { autoMakeup = on; }
+
+    /** Filtr w torze detekcji: dół (stopa, bas) nie wywołuje ściskania całości. */
+    void setSidechainHighpass (float hz)
+    {
+        if (std::abs (hz - scHz) < 0.5f) return;
+        scHz = hz;
+        for (auto& f : scHp) f.highpass (sr, juce::jmax (20.f, hz), 0.7071f);
+    }
 
     void setManual (bool on, float thresholdDb, float ratioIn, float attackMs, float releaseMs,
                     float makeupDb, float mix, bool allButtons)
@@ -126,6 +138,7 @@ public:
             makeupDb = -0.8f * gainComputer (-10.f);
         }
 
+        manualAutoMakeup = (manual && autoMakeup) ? -0.5f * gainComputer (-12.f) : 0.f;
         const float attackC = 1.f - std::exp (-1.f / (att * sr));
         const float rmsC    = 1.f - std::exp (-1.f / (rmsTime * sr));
         const float releaseFixed = 1.f - std::exp (-1.f / (rel * sr));
@@ -139,7 +152,9 @@ public:
 
         for (size_t i = 0; i < block.getNumSamples(); ++i)
         {
-            const float x = R ? std::max (std::fabs (L[i]), std::fabs (R[i])) : std::fabs (L[i]);
+            float dl = L[i], dr = R ? R[i] : 0.f;
+            if (scHz > 25.f) { dl = scHp[0].process (dl); dr = scHp[1].process (dr); }
+            const float x = R ? std::max (std::fabs (dl), std::fabs (dr)) : std::fabs (dl);
             float levelDb;
             if (peakDetect)
             {
@@ -181,7 +196,7 @@ public:
             }
             blockMin = std::min (blockMin, grDb);
 
-            const float mk = manual ? makeupSm.getNextValue() : makeupDb;
+            const float mk = manual ? makeupSm.getNextValue() + (autoMakeup ? manualAutoMakeup : 0.f) : makeupDb;
             const float g = juce::Decibels::decibelsToGain (grDb + mk);
             const float mix = manual ? mixSm.getNextValue() : 1.f;
 
@@ -229,13 +244,16 @@ private:
     }
 
     float sr = 48000.f;
+    float scHz = 0.f;
+    stonoga::Biquad scHp[2];
     Mode mode = Mode::Sustain;
     float ms = 0.f, grDb = 0.f, heldSeconds = 0.f, peakGr = 0.f;
     std::atomic<float> meterDb { 0.f };
     float thrDb = -12.f, ratio = 2.f, kneeDb = 8.f;
     int chr = Clean, colour = 0;
 
-    bool manual = false, allBtn = false;
+    bool manual = false, allBtn = false, autoMakeup = false;
+    float manualAutoMakeup = 0.f;
     float mThr = -18.f, mRatio = 4.f, mAtt = 10.f, mRel = 150.f;
     juce::SmoothedValue<float> amount { 0.f }, makeupSm { 0.f }, mixSm { 1.f };
 };

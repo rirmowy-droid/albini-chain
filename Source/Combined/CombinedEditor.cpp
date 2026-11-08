@@ -182,7 +182,6 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     lowOnlyButton.setButtonText (pl ("tylko dół (< 150 Hz)"));
     lowOnlyAtt = std::make_unique<ButtonAtt> (p.apvts, "duckLowOnly", lowOnlyButton);
 
-    addKnob (eqKnobs, "albumAmt", pl ("Barwa płyty (suma)"), false);
     addKnob (eqKnobs, "autoEqAmt", pl ("Siła korekty"), false);
     for (int b = 0; b < sxa::kNumEqBands; ++b)
     {
@@ -190,14 +189,38 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
         for (const auto& d : sxa::kParams) if (d.mem == sxa::kEqMembers[b]) id = d.id;
         addKnob (eqKnobs, id, pl (shortNameFor (id)) + " Hz", false, true);
     }
-    styleLabel (eqInfo, pl ("Suwaki: korekta ścieżki ustawiana przez auto-miks (robi miejsce ważniejszym instrumentom). „Barwa płyty”: na sumie – siła dopasowania do płyty w 26 pasmach."),
+    styleLabel (eqInfo, pl ("Ręczna / automatyczna korekta 8 pasm (na ścieżkach ustawia ją auto-miks, żeby robić miejsce ważniejszym instrumentom)."),
                 juce::Colours::grey, 12.f, false);
 
-    for (auto* list : { &compKnobs, &duckKnobs, &eqKnobs })
-        for (auto* k : *list) { page2.push_back (&k->slider); page2.push_back (&k->label); }
-    for (auto* c : std::initializer_list<juce::Component*> { &compModeBox, &compCharBox, &compModeLabel, &compCharLabel, &busCharBox, &busCharLabel,
-                                                             &allButtonsButton, &compInfo, &eqInfo, &lowOnlyButton })
+    // --- klej i auto-korektor sumy (źródło „Cały miks”) ---
+    for (int i = 0; i < 2; ++i) busModeBox.addItem (pl (sxa::kCompModeNames[i]), i + 1);
+    busModeAtt = std::make_unique<ComboAtt> (p.apvts, "busMode", busModeBox);
+    styleLabel (busModeLabel, pl ("Tryb"), tapeCol);
+    busModeLabel.setJustificationType (juce::Justification::centredBottom);
+    addKnob (glueKnobs, "busComp", pl ("Klej (gałka)"), false);
+    for (const char* id : { "busThresh", "busRatio", "busAttack", "busRelease", "busScHpf", "busMix" })
+        addKnob (glueKnobs, id, pl (shortNameFor (id)), false);
+    addKnob (masterKnobs, "albumAmt", pl ("Barwa płyty"), false);
+    addKnob (masterKnobs, "deHarsh", pl ("Wygładzanie góry"), false);
+    trackButton.setButtonText (pl ("Ciągłe dopasowanie"));
+    trackAtt = std::make_unique<ButtonAtt> (p.apvts, "albumTrack", trackButton);
+    styleLabel (masterInfo, pl ("Krzywa: aktualna korekta barwy płyty (27 pasm, 40 Hz – 16 kHz) dla stylu z nagłówka. „Ciągłe dopasowanie” – korektor stale śledzi miks. „Wygładzanie góry” ścisza tylko wyskakujące syczenie i ostre szczyty."),
+                juce::Colours::grey, 12.f, false);
+
+    for (auto* list : { &compKnobs, &duckKnobs })
+        for (auto* k : *list) { page2Track.push_back (&k->slider); page2Track.push_back (&k->label); }
+    for (auto* c : std::initializer_list<juce::Component*> { &compModeBox, &compCharBox, &compModeLabel, &compCharLabel,
+                                                             &allButtonsButton, &compInfo, &lowOnlyButton })
+        page2Track.push_back (c);
+    for (auto* list : { &glueKnobs, &masterKnobs })
+        for (auto* k : *list) { page2Master.push_back (&k->slider); page2Master.push_back (&k->label); }
+    for (auto* c : std::initializer_list<juce::Component*> { &busModeBox, &busModeLabel, &trackButton, &masterInfo })
+        page2Master.push_back (c);
+    for (auto* k : eqKnobs) { page2.push_back (&k->slider); page2.push_back (&k->label); }
+    for (auto* c : std::initializer_list<juce::Component*> { &busCharBox, &busCharLabel, &eqInfo })
         page2.push_back (c);
+    gluePanel     = { pl ("KLEJ SUMY: KOMPRESOR NA CAŁOŚĆ"), {}, flannel.brighter (0.4f), false };
+    masterEqPanel = { pl ("AUTO-KOREKTOR SUMY I WYGŁADZANIE GÓRY"), {}, tapeCol, false };
 
     compPanel = { pl ("PEŁNY KOMPRESOR ŹRÓDŁA"), {}, flannel.brighter (0.4f), false };
     duckPanel = { pl ("USTĘPOWANIE: BAS STOPIE, GITARY WOKALOWI"), {}, tapeCol, false };
@@ -205,6 +228,8 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
 
     for (auto* c : page1) addAndMakeVisible (c);
     for (auto* c : page2) addChildComponent (c);
+    for (auto* c : page2Track) addChildComponent (c);
+    for (auto* c : page2Master) addChildComponent (c);
 
     setResizable (true, true);
     setResizeLimits (960, 640, 1900, 1300);
@@ -224,7 +249,10 @@ CombinedEditor::~CombinedEditor()
 void CombinedEditor::setPage (int newPage)
 {
     page = newPage;
+    const bool mix = proc.getSource() == sxa::Mix;
     for (auto* c : page2) c->setVisible (page == 1);
+    for (auto* c : page2Track) c->setVisible (page == 1 && ! mix);
+    for (auto* c : page2Master) c->setVisible (page == 1 && mix);
     for (auto* c : page1) c->setVisible (page == 0);
     updateVisibility (true);
     repaint();
@@ -253,7 +281,9 @@ void CombinedEditor::updateVisibility (bool force)
 {
     const int src = proc.getSource();
     if (src == lastSource && ! force) return;
+    const bool sourceChanged = src != lastSource;
     lastSource = src;
+    if (sourceChanged && ! force) { setPage (page); resized(); return; }
 
     if (page == 0)
     {
@@ -288,9 +318,9 @@ void CombinedEditor::timerCallback()
 
     if (page == 1)
     {
-        repaint (grMeter.expanded (2, 20));
-        repaint (kickMeter.expanded (2, 20));
-        repaint (vocalMeter.expanded (2, 20));
+        for (auto r : { grMeter, kickMeter, vocalMeter, busGrMeter, harshMeter })
+            repaint (r.expanded (2, 20));
+        repaint (curveArea);
     }
 }
 
@@ -347,6 +377,13 @@ void CombinedEditor::paint (juce::Graphics& g)
         else drawPanel (g, { pl ("TO ŹRÓDŁO NIE MA KOSTKI"), pedalPanel.bounds.getUnion (ampPanel.bounds), seal, true });
         for (const auto* p : { &srcPanel, &studioPanel, &busPanel, &outPanel, &irPanel }) drawPanel (g, *p);
     }
+    else if (proc.getSource() == sxa::Mix)
+    {
+        for (const auto* p : { &gluePanel, &masterEqPanel, &eqPanel }) drawPanel (g, *p);
+        drawMeter (g, busGrMeter, proc.getBusReductionDb(), 12.f, pl ("klej"), flannel.brighter (0.3f));
+        drawMeter (g, harshMeter, proc.getDeHarshDb(), 10.f, pl ("góra"), tapeCol);
+        drawCurve (g);
+    }
     else
     {
         for (const auto* p : { &compPanel, &duckPanel, &eqPanel }) drawPanel (g, *p);
@@ -354,6 +391,48 @@ void CombinedEditor::paint (juce::Graphics& g)
         drawMeter (g, kickMeter, proc.getKickDuckDb(), 12.f, pl ("stopa"), tapeCol);
         drawMeter (g, vocalMeter, proc.getVocalDuckDb(), 8.f, pl ("wokal"), tapeCol);
     }
+}
+
+void CombinedEditor::drawCurve (juce::Graphics& g)
+{
+    if (curveArea.isEmpty()) return;
+    auto r = curveArea.toFloat();
+    g.setColour (juce::Colour (0xff111111));
+    g.fillRoundedRectangle (r, 4.f);
+    const float range = 8.f;
+    auto yOf = [&] (float db) { return r.getCentreY() - db / range * (r.getHeight() * 0.45f); };
+    auto xOf = [&] (float hz) { return r.getX() + r.getWidth() * (std::log (hz / 30.f) / std::log (18000.f / 30.f)); };
+    g.setFont (juce::FontOptions (10.5f));
+    for (float db : { -8.f, -4.f, 0.f, 4.f, 8.f })
+    {
+        g.setColour (db == 0.f ? juce::Colour (0xff555555) : juce::Colour (0xff2c2c2c));
+        g.drawHorizontalLine ((int) yOf (db), r.getX(), r.getRight());
+        g.setColour (juce::Colours::grey);
+        g.drawText (juce::String ((int) db), juce::Rectangle<float> (r.getX() + 2, yOf (db) - 7, 24, 14), juce::Justification::left);
+    }
+    for (float hz : { 100.f, 1000.f, 10000.f })
+    {
+        g.setColour (juce::Colour (0xff2c2c2c));
+        g.drawVerticalLine ((int) xOf (hz), r.getY(), r.getBottom());
+        g.setColour (juce::Colours::grey);
+        g.drawText (hz >= 1000.f ? juce::String ((int) (hz / 1000.f)) + "k" : juce::String ((int) hz), juce::Rectangle<float> (xOf (hz) + 2, r.getBottom() - 14, 30, 12), juce::Justification::left);
+    }
+    float gains[AlbumEq::numBands];
+    proc.getAlbumGains (gains);
+    float amt = 1.f;
+    if (auto* v = proc.apvts.getRawParameterValue ("albumAmt")) amt = v->load();
+    juce::Path path;
+    // krzywa całej kaskady (to, co naprawdę słychać)
+    for (int i = 0; i <= 120; ++i)
+    {
+        const float hz = 30.f * std::pow (18000.f / 30.f, (float) i / 120.f);
+        float db = 0.f;
+        for (int b = 0; b < AlbumEq::numBands; ++b) db += AlbumEq::peakResponseDb (48000.f, AlbumEq::bandHz (b), AlbumEq::q, gains[b] * amt, hz);
+        const float y = yOf (juce::jlimit (-range, range, db));
+        if (i == 0) path.startNewSubPath (xOf (hz), y); else path.lineTo (xOf (hz), y);
+    }
+    g.setColour (tapeCol);
+    g.strokePath (path, juce::PathStrokeType (2.f));
 }
 
 void CombinedEditor::layoutKnobs (juce::OwnedArray<Knob>& list, juce::Rectangle<int> area, int firstCellOffset)
@@ -479,6 +558,30 @@ void CombinedEditor::resized()
         layoutKnobs (duckKnobs, d.withTrimmedRight (dw));
         lowOnlyButton.setBounds (d.removeFromRight (dw).withSizeKeepingCentre (dw - 10, 26));
         a.removeFromTop (6);
+
+        // --- źródło „Cały miks”: klej + auto-korektor zamiast kompresora i ustępowania ---
+        {
+            auto m = content;
+            gluePanel.bounds = m.removeFromTop (rowH + rowH / 3).reduced (3);
+            auto gp = gluePanel.bounds.reduced (8, 4);
+            busGrMeter = gp.removeFromRight (60).reduced (8, 4).withTrimmedTop (16);
+            const int gw = gp.getWidth() / (glueKnobs.size() + 2);
+            layoutCombo (busModeBox, busModeLabel, gp.withWidth (gw));
+            if (proc.getSource() == sxa::Mix)
+                layoutCombo (busCharBox, busCharLabel, gp.withWidth (gw).translated (gw, 0));
+            layoutKnobs (glueKnobs, gp, 2);
+            m.removeFromTop (6);
+
+            masterEqPanel.bounds = m.removeFromTop (rowH).reduced (3);
+            auto mp = masterEqPanel.bounds.reduced (8, 4);
+            masterInfo.setBounds (mp.removeFromBottom (18).reduced (4, 0));
+            harshMeter = mp.removeFromRight (60).reduced (8, 0).withTrimmedTop (16);
+            auto controls = mp.removeFromLeft (mp.getWidth() * 38 / 100);
+            curveArea = mp.withTrimmedTop (22).reduced (6, 2);
+            auto toggleRow = controls.removeFromBottom (28);
+            trackButton.setBounds (toggleRow.reduced (8, 0));
+            layoutKnobs (masterKnobs, controls);
+        }
 
         // korekta barwy: siła + 8 suwaków
         eqPanel.bounds = a.reduced (3);

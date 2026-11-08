@@ -47,9 +47,15 @@ Na czym oparte są style (to inspiracja, nie kopia brzmienia płyt):
 - *Smoła* – Dirt (Dave Jerden): kilka pieców mieszanych pasmami, trzy U87 jako mikrofony sali, phaser i delay na gitarach, analogowa taśma.
 - *Czarne słońce* – Superunknown (Bad Animals, preampy Neve, taśma Studer).
 
+### Suma (źródło „Cały miks”): klej, auto-korektor, wygładzanie góry
+Przy źródle „Cały miks” strona **KOMPRESOR I MIKS** pokazuje:
+- **Klej sumy** – kompresor na całość: jedna gałka albo ręcznie (próg, ratio, atak, puszczanie – na maksimum „auto”, zależne od programu), **filtr sidechain** (20–300 Hz, domyślnie 100 Hz: stopa i bas nie pompują całością), **mix** (kompresja równoległa), charakter (domyślnie w stylu szyny SSL), automatyczne wyrównanie głośności i wskaźnik.
+- **Auto-korektor sumy** – barwa płyty w **27 pasmach (40 Hz – 16 kHz)** z wykresem aktualnej korekty; **ciągłe dopasowanie** (korektor co ~2 s dociąga miks do krzywej płyty, zbiega w ok. 30 s grania). Powyżej 9 kHz korektor przycina normalnie, ale podbija najwyżej o ~2 dB (żeby nie dodać syczenia).
+- **Wygładzanie góry** – dynamiczny korektor w 6 pasmach 2,5–14 kHz: ścisza tylko wyskakujące syczenie, ostre talerze i kłujące szczyty (w teście: syczące wybuchy −12 dB, spokojna góra −1,4 dB).
+
 ### Brzmienie płyty (auto-miks na sumie)
 W stylach z krzywą kopia na sumie (źródło „Cały miks”) dopasowuje miks do płyty w **dwóch przebiegach**:
-1. mierzy miks w **26 pasmach co 1/3 oktawy** (40 Hz – 12,5 kHz), szerokość stereo i głośność, ustawia korektor „barwa płyty” (filtry dopasowane iteracyjnie, żeby nakładające się pasma dały dokładnie zadaną krzywą), panoramę M/S i głośność,
+1. mierzy miks w **27 pasmach co 1/3 oktawy** (40 Hz – 16 kHz), szerokość stereo i głośność, ustawia korektor „barwa płyty” (filtry dopasowane iteracyjnie, żeby nakładające się pasma dały dokładnie zadaną krzywą), panoramę M/S i głośność,
 2. słucha jeszcze raz po korekcie i dociąga resztę różnicy; głośność mierzy za limiterem.
 
 Gałka **Barwa płyty** (strona KOMPRESOR I MIKS) ustala siłę dopasowania. Na syntetycznym zespole odchylenie barwy od płyty spada z 3,3–4,6 dB do 0,6–1,6 dB, szerokość trafia z dokładnością do 0,4 dB, głośność do ~1 dB.

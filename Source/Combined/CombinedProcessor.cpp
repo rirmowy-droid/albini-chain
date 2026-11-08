@@ -59,7 +59,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 juce::StringArray ch;
                 if (juce::String (def.id) == "source") ch = names (sxa::kSourceNames, sxa::NumSources);
                 else if (juce::String (def.id) == "mic") ch = names (sxa::kMicNames, sxa::NumMics);
-                else if (juce::String (def.id) == "compMode") ch = names (sxa::kCompModeNames, 2);
+                else if (juce::String (def.id) == "compMode" || juce::String (def.id) == "busMode") ch = names (sxa::kCompModeNames, 2);
                 else if (juce::String (def.id) == "compChar" || juce::String (def.id) == "busCompChar") ch = names (sxa::kCompCharNames, sxa::kNumCompChars);
                 else if (juce::String (def.id) == "consoleModel") ch = names (sxa::kConsoleNames, sxa::kNumConsoles);
                 else ch = names (sxa::kStyleNames, sxa::kNumStyles);
@@ -277,6 +277,25 @@ void CombinedProcessor::timerCallback()
     const double elapsed = now - amStart;
     const auto ctx = mixContext();
 
+    // ciągłe dopasowanie barwy sumy: co ~2 s dociągnij korektor do krzywej płyty
+    if (source == sxa::Mix && amState == AM::Idle && paramValue ("albumTrack") > 0.5f && ++trackTicks >= 20)
+    {
+        trackTicks = 0;
+        const int style = (int) std::round (paramValue ("style"));
+        if (sxa::kAlbumCurves[style].has && engine.getTrackedSeconds() > 4.f)
+        {
+            float bands[AlbumEq::numBands], diff[AlbumEq::numBands], gains[AlbumEq::numBands];
+            engine.getTrackedAlbumBandsDb (bands);
+            sxa::computeAlbumTarget (style, bands, diff);
+            for (int b = 0; b < AlbumEq::numBands; ++b)
+                albumTarget[(size_t) b] = juce::jlimit (-8.f, AlbumEq::bandHz (b) > 9000.f ? 2.f : 8.f, albumTarget[(size_t) b] + 0.25f * diff[b]);
+            AlbumEq::fit ((float) getSampleRate(), albumTarget.data(), gains);
+            setAlbumGains (gains);
+            if (autoStatus.isEmpty() || autoStatus.startsWith (pl ("Auto-miks: gotowe")) || autoStatus.startsWith (pl ("Ciągłe")))
+                autoStatus = pl ("Ciągłe dopasowanie barwy: ") + pl (sxa::kAlbumCurves[style].name);
+        }
+    }
+
     switch (amState)
     {
         case AM::Idle: break;
@@ -344,7 +363,8 @@ void CombinedProcessor::timerCallback()
                 readSettings (s, p);
                 sxa::applyTemplate (s, amStyle, ctx);
                 for (const char* id : { "busComp", "width", "smear", "console", "tape", "tilt", "roomMix", "lowCut",
-                                        "consoleModel", "busCompChar", "eq0", "eq1", "eq2", "eq3", "eq4", "eq5", "eq6", "eq7" })
+                                        "consoleModel", "busCompChar", "eq0", "eq1", "eq2", "eq3", "eq4", "eq5", "eq6", "eq7",
+                                        "deHarsh", "busMode", "busScHpf", "busMix" })
                     for (const auto& def : sxa::kParams)
                         if (juce::String (def.id) == id) setParam (id, s.*(def.mem));
                 setParam ("autoGain", 0.f);
@@ -390,7 +410,7 @@ void CombinedProcessor::timerCallback()
                 if (sxa::computeAlbumTarget (amStyle, bands, diff))
                 {
                     for (int b = 0; b < AlbumEq::numBands; ++b)
-                        albumTarget[(size_t) b] = juce::jlimit (-8.f, 8.f, (second ? albumTarget[(size_t) b] : 0.f) + diff[b]);
+                        albumTarget[(size_t) b] = juce::jlimit (-8.f, AlbumEq::bandHz (b) > 9000.f ? 2.f : 8.f, (second ? albumTarget[(size_t) b] : 0.f) + diff[b]);
                     AlbumEq::fit ((float) getSampleRate(), albumTarget.data(), gains);
                     setAlbumGains (gains);
                     setParam ("width", sxa::computeAlbumWidth (amStyle, engine.getMeasuredSideToMidDb(), paramValue ("width")));
@@ -451,6 +471,10 @@ void CombinedProcessor::setAlbumGains (const float* gains)
     juce::StringArray parts;
     for (float v : g) parts.add (juce::String (v, 2));
     apvts.state.setProperty ("albumEq", parts.joinIntoString (","), nullptr);
+    if (gains == nullptr) albumTarget.fill (0.f);
+    juce::StringArray tp;
+    for (float v : albumTarget) tp.add (juce::String (v, 2));
+    apvts.state.setProperty ("albumTarget", tp.joinIntoString (","), nullptr);
 }
 
 void CombinedProcessor::restoreAlbumFromState()
@@ -461,6 +485,9 @@ void CombinedProcessor::restoreAlbumFromState()
     if (parts.size() == AlbumEq::numBands)
         for (int b = 0; b < AlbumEq::numBands; ++b) g[b] = parts[b].getFloatValue();
     engine.albumEq().setGains (g);
+    juce::StringArray tp;
+    tp.addTokens (apvts.state.getProperty ("albumTarget").toString(), ",", "");
+    for (int b = 0; b < AlbumEq::numBands; ++b) albumTarget[(size_t) b] = tp.size() == AlbumEq::numBands ? tp[b].getFloatValue() : 0.f;
 }
 
 void CombinedProcessor::restoreCabIRsFromState()

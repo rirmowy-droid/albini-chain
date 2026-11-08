@@ -17,6 +17,7 @@
 #include "DuckStage.h"
 #include "SlapEcho.h"
 #include "AlbumEq.h"
+#include "DeHarsh.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -48,6 +49,12 @@ public:
     float getCompReductionDb() const   { return srcComp.getGainReductionDb(); }
     float getKickDuckDb() const        { return duck.getKickDuckDb(); }
     float getVocalDuckDb() const       { return duck.getVocalDuckDb(); }
+    float getBusReductionDb() const    { return busComp.getGainReductionDb(); }
+    float getDeHarshDb() const         { return deHarsh.getReductionDb(); }
+
+    // --- ciągłe dopasowanie barwy sumy: wolno uśredniane widmo (27 pasm) --------
+    void getTrackedAlbumBandsDb (float* out) const;
+    float getTrackedSeconds() const { return trackSeconds.load(); }
 
     CabinetStage& cabinet() { return cab; }
 
@@ -88,6 +95,10 @@ private:
     DuckStage duck;
     SlapEcho slap;
     AlbumEq album;
+    DeHarsh deHarsh;
+    stonoga::Biquad trackBp[AlbumEq::numBands];
+    std::array<std::atomic<float>, AlbumEq::numBands> trackMs {};
+    std::atomic<float> trackSeconds { 0.f };
     stonoga::Biquad albumBp[AlbumEq::numBands];
     double albumSq[AlbumEq::numBands] {};
     std::array<std::atomic<float>, AlbumEq::numBands> albumMs {};

@@ -69,6 +69,18 @@ private:
     Panel compPanel, duckPanel, eqPanel;
     juce::Rectangle<int> grMeter, kickMeter, vocalMeter;
 
+    // --- strona 2 przy źródle „Cały miks”: klej i auto-korektor sumy ---
+    juce::OwnedArray<Knob> glueKnobs, masterKnobs;
+    juce::ComboBox busModeBox;
+    std::unique_ptr<ComboAtt> busModeAtt;
+    juce::Label busModeLabel, masterInfo;
+    juce::ToggleButton trackButton;
+    std::unique_ptr<ButtonAtt> trackAtt;
+    Panel gluePanel, masterEqPanel;
+    juce::Rectangle<int> busGrMeter, harshMeter, curveArea;
+    std::vector<juce::Component*> page2Track, page2Master;
+    void drawCurve (juce::Graphics& g);
+
     // --- nagłówek ---
     juce::ComboBox sourceBox, presetBox, styleBox;
     std::unique_ptr<ComboAtt> sourceAtt, styleAtt;

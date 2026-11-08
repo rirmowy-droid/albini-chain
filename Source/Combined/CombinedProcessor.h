@@ -52,6 +52,9 @@ public:
     float getCompReductionDb() const { return engine.getCompReductionDb(); }
     float getKickDuckDb() const      { return engine.getKickDuckDb(); }
     float getVocalDuckDb() const     { return engine.getVocalDuckDb(); }
+    float getBusReductionDb() const  { return engine.getBusReductionDb(); }
+    float getDeHarshDb() const       { return engine.getDeHarshDb(); }
+    void getAlbumGains (float* out) const { const_cast<ChainEngine&> (engine).albumEq().getGains (out); }
 
     juce::AudioProcessorValueTreeState apvts;
 
@@ -81,6 +84,7 @@ private:
     double amStart = 0.0, amPeersStart = 0.0;
     std::array<float, sxa::kNumEqBands> myBands {};
     std::array<float, AlbumEq::numBands> albumTarget {};
+    int trackTicks = 0;
     juce::String lastGainText;
     static int eqParamIndex (int band);
     juce::String autoStatus { juce::String::fromUTF8 ("Auto-miks: wybierz styl i kliknij") };
