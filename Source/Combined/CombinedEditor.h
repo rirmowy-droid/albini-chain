@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "CombinedProcessor.h"
+#include "MixerView.h"
 
 class CombinedEditor : public juce::AudioProcessorEditor,
                        private juce::Timer
@@ -60,7 +61,12 @@ private:
     juce::Label ampModelLabel, cabMicLabel;
     juce::ToggleButton hqButton, alignButton, dblButton;
     std::unique_ptr<ButtonAtt> hqAtt, alignAtt, dblAtt;
-    Panel cabPanel;
+    Panel cabPanel, bassPanel, drumPanel, vocalPanel, mixerPanel, chanPanel;
+    juce::OwnedArray<Knob> bassKnobs, drumKnobs, vocalKnobs, chanKnobs;
+    std::unique_ptr<MixerView> mixer;
+    juce::ToggleButton chanMute, chanSolo;
+    std::unique_ptr<ButtonAtt> chanMuteAtt, chanSoloAtt;
+    juce::Label chanInfo;
     juce::OwnedArray<Knob> pedalKnobs, ampKnobs, srcKnobs, studioKnobs, busKnobs, outKnobs;
     juce::ComboBox micBox, consoleBox;
     std::unique_ptr<ComboAtt> micAtt, consoleAtt;

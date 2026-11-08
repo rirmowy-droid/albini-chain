@@ -42,6 +42,9 @@ public:
     bool loadUserPreset (const juce::File& file);
     juce::String getUserPresetName() const { return userPresetName; }
 
+    void updateTrackProperties (const TrackProperties& props) override;
+    int getRegistrySlot() const { return registrySlot; }
+
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
@@ -93,6 +96,9 @@ private:
     enum class AM { Idle, Listening, WaitingForPeers, WaitingForTracks, ListeningMix, ListeningMix2 };
     AM amState = AM::Idle;
     int registrySlot = -1, seenGeneration = 0, amStyle = 0;
+    std::array<int, sxa::MixRegistry::NumFields> seenRemote {};
+    float meterHold = -100.f;
+    juce::String trackName;
     double amStart = 0.0, amPeersStart = 0.0;
     std::array<float, sxa::kNumEqBands> myBands {};
     std::array<float, AlbumEq::numBands> albumTarget {};

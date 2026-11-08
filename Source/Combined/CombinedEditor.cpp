@@ -139,6 +139,12 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     for (const auto& d : sxa::kPedal) addKnob (pedalKnobs, d.id, pl (d.name), true);
     for (const char* id : { "ampInput", "ampDrive", "ampPresence", "ampResonance", "ampSag" }) addKnob (ampKnobs, id, pl (shortNameFor (id)), true);
     for (const char* id : { "cabBlend", "micPos", "micDist" }) addKnob (cabKnobs, id, pl (shortNameFor (id)), true);
+    for (const char* id : { "baDi", "baLow", "baGrowl", "baClick" }) addKnob (bassKnobs, id, pl (shortNameFor (id)), true);
+    for (const char* id : { "drKick", "drBox", "drSnare", "drCrack", "drCymbals", "trAttack", "trSustain", "roomCrush" })
+        addKnob (drumKnobs, id, pl (shortNameFor (id)), true);
+    for (const char* id : { "voProx", "voNasal", "voFront", "voAir", "deEss", "slap" }) addKnob (vocalKnobs, id, pl (shortNameFor (id)), true);
+    mixer = std::make_unique<MixerView> (MixerView::Colours { ink, paper, seal, paper });
+    page1.push_back (mixer.get());
     for (int i = 0; i < sxa::kNumAmps; ++i) ampModelBox.addItem (pl (sxa::kAmpNames[i]), i + 1);
     ampModelAtt = std::make_unique<ComboAtt> (p.apvts, "ampModel", ampModelBox);
     styleLabel (ampModelLabel, pl ("Piec"), seal);
@@ -185,7 +191,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     }
     lastIRFolder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
 
-    for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs })
+    for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs, &bassKnobs, &drumKnobs, &vocalKnobs })
         for (auto* k : *list) { page1.push_back (&k->slider); page1.push_back (&k->label); }
     for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch,
                                                              &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton,
@@ -196,6 +202,11 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     pedalPanel  = { "KOSTKA STONOGA", {}, seal, true };
     ampPanel    = { "WZMACNIACZ", {}, seal, true };
     cabPanel    = { "KOLUMNA I MIKROFON", {}, seal, true };
+    bassPanel   = { pl ("BAS: DI, DÓŁ, WARKOT, KLIK"), {}, seal, true };
+    drumPanel   = { pl ("BĘBNY: STOPA, PUDŁO, WERBEL, TRZASK, TALERZE, ATAK, WYBRZMIENIE, SALA"), {}, seal, true };
+    vocalPanel  = { pl ("WOKAL: BLISKOŚĆ, NOS, PRZÓD, POWIETRZE, SYCZENIE, ECHO"), {}, seal, true };
+    mixerPanel  = { pl ("MIKSER ŚCIEŻEK (KOPIE WTYCZKI NA ŚCIEŻKACH FL)"), {}, seal, false };
+    chanPanel   = { pl ("KANAŁ KONSOLETY: SUWAK I EQ (STERUJE NIM TEŻ MIKSER NA SUMIE)"), {}, tapeCol, false };
     srcPanel    = { "NA PRZESTERZE", {}, seal.brighter (0.3f), false };
     studioPanel = { pl ("STUDIO ALBINIEGO: MIKROFON, SALA, KONSOLETA, TAŚMA"), {}, tapeCol, false };
     busPanel    = { pl ("NA CAŁOŚCI"), {}, tapeCol, false };
@@ -254,8 +265,15 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     styleLabel (masterInfo, pl ("Krzywa: aktualna korekta barwy płyty (27 pasm, 40 Hz – 16 kHz) dla stylu z nagłówka. „Ciągłe dopasowanie” – korektor stale śledzi miks. „Wygładzanie góry” ścisza tylko wyskakujące syczenie i ostre szczyty."),
                 juce::Colours::grey, 12.f, false);
 
-    for (auto* list : { &compKnobs, &duckKnobs })
+    for (const char* id : { "mixFader", "chLow", "chMid", "chMidHz", "chHigh" }) addKnob (chanKnobs, id, pl (shortNameFor (id)), false);
+    chanMute.setButtonText (pl ("Wycisz"));
+    chanSolo.setButtonText (pl ("Solo"));
+    chanMuteAtt = std::make_unique<ButtonAtt> (p.apvts, "mixMute", chanMute);
+    chanSoloAtt = std::make_unique<ButtonAtt> (p.apvts, "mixSolo", chanSolo);
+    for (auto* list : { &compKnobs, &duckKnobs, &chanKnobs })
         for (auto* k : *list) { page2Track.push_back (&k->slider); page2Track.push_back (&k->label); }
+    page2Track.push_back (&chanMute);
+    page2Track.push_back (&chanSolo);
     for (auto* c : std::initializer_list<juce::Component*> { &compModeBox, &compCharBox, &compModeLabel, &compCharLabel,
                                                              &allButtonsButton, &compInfo, &lowOnlyButton })
         page2Track.push_back (c);
@@ -337,12 +355,17 @@ void CombinedEditor::updateVisibility (bool force)
         const bool pedal = sxa::hasPedal (src);
         for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs })
             for (auto* k : *list) { k->slider.setVisible (pedal); k->label.setVisible (pedal); }
+        auto showList = [] (juce::OwnedArray<Knob>& l, bool v) { for (auto* k : l) { k->slider.setVisible (v); k->label.setVisible (v); } };
+        showList (bassKnobs, src == sxa::Bass);
+        showList (drumKnobs, src == sxa::Drums);
+        showList (vocalKnobs, src == sxa::Vocals);
+        mixer->setVisible (src == sxa::Mix);
         footswitch.setVisible (pedal);
         for (auto* c : std::initializer_list<juce::Component*> { &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton })
             c->setVisible (pedal);
         dblButton.setVisible (src == sxa::Guitar);
         for (auto& s : irSlots) { s.load.setEnabled (pedal); s.clear.setEnabled (pedal); s.choose.setEnabled (pedal); }
-        noPedalLabel.setVisible (! pedal);
+        noPedalLabel.setVisible (false);
     }
 
     srcPanel.title = src == sxa::Guitar ? pl ("NA PRZESTERZE: KOMPRESJA, CHORUS, PANORAMA, POGŁOS")
@@ -430,8 +453,12 @@ void CombinedEditor::paint (juce::Graphics& g)
 
     if (page == 0)
     {
-        if (sxa::hasPedal (proc.getSource())) { drawPanel (g, pedalPanel); drawPanel (g, ampPanel); drawPanel (g, cabPanel); }
-        else drawPanel (g, { pl ("TO ŹRÓDŁO NIE MA KOSTKI"), pedalPanel.bounds.getUnion (cabPanel.bounds), seal, true });
+        const int src = proc.getSource();
+        if (sxa::hasPedal (src)) { drawPanel (g, pedalPanel); drawPanel (g, ampPanel); drawPanel (g, cabPanel); }
+        if (src == sxa::Bass)   drawPanel (g, bassPanel);
+        if (src == sxa::Drums)  drawPanel (g, drumPanel);
+        if (src == sxa::Vocals) drawPanel (g, vocalPanel);
+        if (src == sxa::Mix)    drawPanel (g, mixerPanel);
         for (const auto* p : { &srcPanel, &studioPanel, &busPanel, &outPanel, &irPanel }) drawPanel (g, *p);
     }
     else if (proc.getSource() == sxa::Mix)
@@ -443,7 +470,7 @@ void CombinedEditor::paint (juce::Graphics& g)
     }
     else
     {
-        for (const auto* p : { &compPanel, &duckPanel, &eqPanel }) drawPanel (g, *p);
+        for (const auto* p : { &compPanel, &duckPanel, &chanPanel, &eqPanel }) drawPanel (g, *p);
         drawMeter (g, grMeter, proc.getCompReductionDb(), 24.f, pl ("ściska"), flannel.brighter (0.3f));
         drawMeter (g, kickMeter, proc.getKickDuckDb(), 12.f, pl ("stopa"), tapeCol);
         drawMeter (g, vocalMeter, proc.getVocalDuckDb(), 8.f, pl ("wokal"), tapeCol);
@@ -617,7 +644,24 @@ void CombinedEditor::resized()
     {
         auto a = content;
         const int rowH1 = (content.getHeight() - 24) / 5;
-        pedalPanel.bounds = a.removeFromTop (rowH1).reduced (3);
+        const int srcNow = proc.getSource();
+        const auto rows12 = a.withHeight (rowH1 * 2 + 6);
+        drumPanel.bounds = vocalPanel.bounds = mixerPanel.bounds = rows12.reduced (3);
+        {
+            auto big = rows12.reduced (14, 10).withTrimmedTop (16);
+            big = big.withSizeKeepingCentre (big.getWidth(), juce::jmin (big.getHeight(), (int) (rowH1 * 1.5f)));
+            layoutKnobs (drumKnobs, big);
+            layoutKnobs (vocalKnobs, big);
+            mixer->setBounds (mixerPanel.bounds.reduced (8, 4).withTrimmedTop (22));
+        }
+        auto r1 = a.removeFromTop (rowH1);
+        if (srcNow == sxa::Bass)
+        {
+            pedalPanel.bounds = r1.removeFromLeft ((int) (r1.getWidth() * 0.62f)).reduced (3);
+            bassPanel.bounds = r1.reduced (3);
+            layoutKnobs (bassKnobs, bassPanel.bounds.reduced (8, 4));
+        }
+        else pedalPanel.bounds = r1.reduced (3);
         auto inner = pedalPanel.bounds.reduced (8, 4);
         const int cellW = inner.getWidth() / (pedalKnobs.size() + 1);
         footswitch.setBounds (inner.withTrimmedTop (22).removeFromLeft (cellW).reduced (6, 16));
@@ -707,13 +751,23 @@ void CombinedEditor::resized()
         a.removeFromTop (6);
 
         // ustępowanie: 3 gałki + przełącznik + 2 wskaźniki
-        duckPanel.bounds = a.removeFromTop (rowH).reduced (3);
+        duckPanel.bounds = a.removeFromTop (rowH * 4 / 5).reduced (3);
         auto d = duckPanel.bounds.reduced (8, 4);
         vocalMeter = d.removeFromRight (60).reduced (8, 0).withTrimmedTop (16);
         kickMeter  = d.removeFromRight (60).reduced (8, 0).withTrimmedTop (16);
         const int dw = d.getWidth() / 4;
         layoutKnobs (duckKnobs, d.withTrimmedRight (dw));
         lowOnlyButton.setBounds (d.removeFromRight (dw).withSizeKeepingCentre (dw - 10, 26));
+        a.removeFromTop (6);
+
+        chanPanel.bounds = a.removeFromTop (rowH * 3 / 4).reduced (3);
+        {
+            auto cp = chanPanel.bounds.reduced (8, 4);
+            auto btns = cp.removeFromRight (cp.getWidth() / 6).withTrimmedTop (22);
+            chanMute.setBounds (btns.removeFromTop (btns.getHeight() / 2).reduced (4, 4));
+            chanSolo.setBounds (btns.reduced (4, 4));
+            layoutKnobs (chanKnobs, cp);
+        }
         a.removeFromTop (6);
 
         // --- źródło „Cały miks”: klej + auto-korektor zamiast kompresora i ustępowania ---

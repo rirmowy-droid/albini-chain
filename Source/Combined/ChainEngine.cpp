@@ -39,6 +39,7 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, boo
     deEsser.prepare (sampleRate);
     doubleTake.prepare (sampleRate);
     midSide.prepare (sampleRate);
+    voice.prepare (sampleRate);
     duck.prepare (sampleRate);
     slap.prepare (sampleRate);
     album.prepare (sampleRate);
@@ -167,17 +168,21 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         cab.process (block);
     }
 
+    // DI / piec: 0,5 = jak dotąd (0,8 piec + 0,9 czystego dołu z linii)
+    const float ampG = 0.8f * std::min (1.f, 2.f * (1.f - s.baDi));
+    const float diG  = 0.9f * std::min (1.f, 2.f * s.baDi);
     if (bass)   // DI: czysty dół pod wzmacniaczem, jak przy nagraniu basu z linii + pieca
         for (size_t c = 0; c < nCh && c < diLp.size(); ++c)
         {
             auto* d = block.getChannelPointer (c);
             const auto* di = diBuf.getReadPointer ((int) c);
             for (size_t i = 0; i < n; ++i)
-                d[i] = 0.8f * d[i] + 0.9f * diLp[c].process (di[i]);
+                d[i] = ampG * d[i] + diG * diLp[c].process (di[i]);
         }
 
     // --- barwa ------------------------------------------------------------------
     tone.process (block, s);
+    voice.process (block, s);
     transient.process (block, s.trAttack, s.trSustain);
 
     // --- na źródle ----------------------------------------------------------------
@@ -322,7 +327,10 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     }
 
     // --- wyjście ---------------------------------------------------------------------------
-    faderGain.setTargetValue (juce::Decibels::decibelsToGain (s.autoGain + s.outputGain));
+    {
+        const bool silent = s.mixMute > 0.5f || s.soloMuted > 0.5f || s.mixFader <= -59.9f;
+        faderGain.setTargetValue (silent ? 0.f : juce::Decibels::decibelsToGain (s.autoGain + s.outputGain + s.mixFader));
+    }
     // panorama ze stałą mocą: na środku 1/1, skrajnie w lewo 1.41/0
     const float pan = juce::jlimit (-1.f, 1.f, s.pan);
     const float th = (pan + 1.f) * juce::MathConstants<float>::pi * 0.25f;
@@ -342,6 +350,12 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
 
     guard.process (block, s.protect);
     limiter.process (block, -1.f);
+    {
+        float pk = outPeak.load (std::memory_order_relaxed);
+        for (size_t c = 0; c < nCh; ++c) pk = std::max (pk, block.getSubsetChannelBlock (c, 1).findMinAndMax().getEnd());
+        for (size_t c = 0; c < nCh; ++c) pk = std::max (pk, -block.getSubsetChannelBlock (c, 1).findMinAndMax().getStart());
+        outPeak.store (pk, std::memory_order_relaxed);
+    }
 
     // pomiar na samym wyjściu (do doregulowania głośności sumy)
     if (measuring.load())

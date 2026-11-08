@@ -57,6 +57,14 @@ namespace sxa
         float tapeModel = 0, tapeSpeed = 0, trAttack = 0.f, trSustain = 0.f, deEss = 0.f;
         // prawdziwy dubel gitary, środek/boki sumy
         float trueDouble = 0, msMonoBass = 20.f, msSideHigh = 0.f, msMidPresence = 0.f;
+        // kanał konsolety (sterowany też z miksera na sumie)
+        float mixFader = 0.f, mixMute = 0, mixSolo = 0, chLow = 0.f, chMid = 0.f, chMidHz = 1000.f, chHigh = 0.f;
+        // panele źródeł
+        float drKick = 0.f, drBox = 0.f, drSnare = 0.f, drCrack = 0.f, drCymbals = 0.f;
+        float voProx = 0.f, voNasal = 0.f, voFront = 0.f, voAir = 0.f;
+        float baDi = 0.5f, baLow = 0.f, baGrowl = 0.f, baClick = 0.f;
+        // nie jest parametrem: wyciszenie przez solo innej ścieżki (ustawia procesor)
+        float soloMuted = 0;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
@@ -133,6 +141,26 @@ namespace sxa
         { "msMonoBass", "Suma: mono dół poniżej",  "Mono dół",    &Settings::msMonoBass, 20, 250,  Kind::Hertz },
         { "msSideHigh", "Suma: góra boków",        "Góra boków",  &Settings::msSideHigh, -6, 6,    Kind::Decibel },
         { "msMidPresence","Suma: prezencja środka", "Środek 2,5k", &Settings::msMidPresence, -4, 4, Kind::Decibel },
+        { "mixFader",   "Kanał: suwak",           "Suwak",        &Settings::mixFader,  -60, 12,   Kind::Decibel },
+        { "mixMute",    "Kanał: wycisz",          "Wycisz",       &Settings::mixMute,    0, 1,     Kind::Toggle },
+        { "mixSolo",    "Kanał: solo",            "Solo",         &Settings::mixSolo,    0, 1,     Kind::Toggle },
+        { "chLow",      "Kanał: dół (100 Hz)",    "Dół",          &Settings::chLow,    -12, 12,    Kind::Decibel },
+        { "chMid",      "Kanał: środek",          "Środek",       &Settings::chMid,    -12, 12,    Kind::Decibel },
+        { "chMidHz",    "Kanał: częstotliwość środka", "Częst. środka", &Settings::chMidHz, 200, 5000, Kind::Hertz },
+        { "chHigh",     "Kanał: góra (8 kHz)",    "Góra",         &Settings::chHigh,   -12, 12,    Kind::Decibel },
+        { "drKick",     "Bębny: stopa (60 Hz)",   "Stopa",        &Settings::drKick,    -9, 9,     Kind::Decibel },
+        { "drBox",      "Bębny: pudło (400 Hz)",  "Pudło",        &Settings::drBox,     -8, 0,     Kind::Decibel },
+        { "drSnare",    "Bębny: ciało werbla (200 Hz)", "Werbel", &Settings::drSnare,   -6, 6,     Kind::Decibel },
+        { "drCrack",    "Bębny: trzask (5 kHz)",  "Trzask",       &Settings::drCrack,   -6, 6,     Kind::Decibel },
+        { "drCymbals",  "Bębny: talerze (9 kHz)", "Talerze",      &Settings::drCymbals, -6, 6,     Kind::Decibel },
+        { "voProx",     "Wokal: bliskość (150 Hz)", "Bliskość",   &Settings::voProx,    -6, 6,     Kind::Decibel },
+        { "voNasal",    "Wokal: nosowość (1 kHz)", "Nos",         &Settings::voNasal,   -6, 0,     Kind::Decibel },
+        { "voFront",    "Wokal: przód (3 kHz)",   "Przód",        &Settings::voFront,   -6, 6,     Kind::Decibel },
+        { "voAir",      "Wokal: powietrze (12 kHz)", "Powietrze", &Settings::voAir,     -6, 6,     Kind::Decibel },
+        { "baDi",       "Bas: DI / piec",         "DI / piec",    &Settings::baDi,       0, 1,     Kind::Blend },
+        { "baLow",      "Bas: dół (80 Hz)",       "Dół",          &Settings::baLow,     -6, 6,     Kind::Decibel },
+        { "baGrowl",    "Bas: warkot (700 Hz)",   "Warkot",       &Settings::baGrowl,   -6, 6,     Kind::Decibel },
+        { "baClick",    "Bas: klik (2,5 kHz)",    "Klik",         &Settings::baClick,   -6, 6,     Kind::Decibel },
         { "cabAlign",   "Kolumny: wyrównanie fazy", "Wyrównaj fazę", &Settings::cabAlign, 0, 1,    Kind::Toggle },
 
         { "distComp",   "Źródło: kompresja",      "Kompresja",    &Settings::srcComp,    0, 1,     Kind::Percent },

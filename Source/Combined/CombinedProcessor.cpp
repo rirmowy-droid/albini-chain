@@ -114,6 +114,7 @@ CombinedProcessor::CombinedProcessor()
 
     registrySlot = sxa::MixRegistry::get().add();
     seenGeneration = sxa::MixRegistry::get().currentGeneration();
+    for (int f = 0; f < sxa::MixRegistry::NumFields; ++f) seenRemote[(size_t) f] = sxa::MixRegistry::get().remoteSeq (juce::jmax (0, registrySlot), f);
     seenUndo = sxa::MixRegistry::get().currentUndoGeneration();
     startTimerHz (10);
 }
@@ -171,6 +172,8 @@ void CombinedProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     float kick = 0.f, vocal = 0.f;
     reg.readEnvelopes (registrySlot, kick, vocal);
     engine.setSidechain (kick, vocal);
+    // solo innej ścieżki wycisza tę (sumy nigdy)
+    s.soloMuted = (s.source != sxa::Mix && s.mixSolo < 0.5f && reg.anySolo()) ? 1.f : 0.f;
 
     juce::dsp::AudioBlock<float> full (buffer);
     full = full.getSubsetChannelBlock (0, (size_t) juce::jmax (1, numOut));
@@ -256,6 +259,23 @@ void CombinedProcessor::timerCallback()
     auto& reg = sxa::MixRegistry::get();
     const int source = getSource();
     reg.setSource (registrySlot, source);
+
+    // mikser na sumie: przejmij zmiany zrobione z innej kopii, potem podaj swoje ustawienia i poziom
+    if (registrySlot >= 0)
+    {
+        for (int f = 0; f < sxa::MixRegistry::NumFields; ++f)
+        {
+            const int seq = reg.remoteSeq (registrySlot, f);
+            if (seq != seenRemote[(size_t) f])
+            {
+                seenRemote[(size_t) f] = seq;
+                setParam (sxa::MixRegistry::fieldParam (f), reg.remoteValue (registrySlot, f));
+            }
+            reg.publishChannel (registrySlot, f, paramValue (sxa::MixRegistry::fieldParam (f)));
+        }
+        meterHold = juce::jmax (engine.takeOutputPeakDb(), meterHold - 2.5f);
+        reg.publishMeter (registrySlot, meterHold);
+    }
 
     const double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
     const int gen = reg.currentGeneration();
@@ -498,6 +518,12 @@ void CombinedProcessor::timerCallback()
             break;
         }
     }
+}
+
+void CombinedProcessor::updateTrackProperties (const TrackProperties& props)
+{
+    trackName = props.name;
+    sxa::MixRegistry::get().setName (registrySlot, props.name);
 }
 
 // ---------------------------------------------------------------------------

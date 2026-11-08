@@ -5,6 +5,8 @@
 #include <array>
 #include <cmath>
 #include <vector>
+#include <algorithm>
+#include <juce_core/juce_core.h>
 #include "Settings.h"
 
 /** Auto-miks.
@@ -37,8 +39,12 @@ namespace sxa
             for (int i = 0; i < maxSlots; ++i)
                 if (! slots[(size_t) i].used.load())
                 {
-                    slots[(size_t) i].used = true;
-                    slots[(size_t) i].order = ++orderCounter;
+                    auto& sl = slots[(size_t) i];
+                    for (auto& c : sl.chan) c.store (0.f);
+                    sl.meterDb = -100.f;
+                    names[(size_t) i].clear();
+                    sl.used = true;
+                    sl.order = ++orderCounter;
                     return i;
                 }
             return -1;
@@ -52,6 +58,61 @@ namespace sxa
         }
 
         void setSource (int slot, int source) { if (slot >= 0) slots[(size_t) slot].source = source; }
+        int  getSource (int slot) const { return slot >= 0 ? slots[(size_t) slot].source.load() : 0; }
+        bool isUsed (int slot) const { return slot >= 0 && slots[(size_t) slot].used.load(); }
+        int  getOrder (int slot) const { return slot >= 0 ? slots[(size_t) slot].order.load() : 0; }
+
+        // --- mikser na sumie: kanały ścieżek ----------------------------------------
+        enum Field { Fader = 0, Mute, Solo, Pan, Low, Mid, High, NumFields };
+        static const char* fieldParam (int f)
+        {
+            static const char* ids[NumFields] = { "mixFader", "mixMute", "mixSolo", "pan", "chLow", "chMid", "chHigh" };
+            return ids[f];
+        }
+        /** Ścieżka podaje swoje aktualne ustawienia i poziom (wątek wiadomości / audio). */
+        void publishChannel (int slot, int field, float v) { if (slot >= 0) slots[(size_t) slot].chan[(size_t) field].store (v); }
+        float channel (int slot, int field) const { return slot >= 0 ? slots[(size_t) slot].chan[(size_t) field].load() : 0.f; }
+        void publishMeter (int slot, float db) { if (slot >= 0) slots[(size_t) slot].meterDb.store (db, std::memory_order_relaxed); }
+        float meter (int slot) const { return slot >= 0 ? slots[(size_t) slot].meterDb.load (std::memory_order_relaxed) : -100.f; }
+        /** Mikser zmienia ustawienie innej ścieżki: ta ścieżka przejmie je na swoim wątku. */
+        void remoteSet (int slot, int field, float v)
+        {
+            if (slot < 0) return;
+            auto& s = slots[(size_t) slot];
+            s.remoteVal[(size_t) field].store (v);
+            s.remoteSeq[(size_t) field].fetch_add (1);
+            s.chan[(size_t) field].store (v);
+        }
+        int remoteSeq (int slot, int field) const { return slots[(size_t) slot].remoteSeq[(size_t) field].load(); }
+        float remoteValue (int slot, int field) const { return slots[(size_t) slot].remoteVal[(size_t) field].load(); }
+        bool anySolo() const
+        {
+            for (const auto& s : slots)
+                if (s.used.load (std::memory_order_relaxed) && s.source.load (std::memory_order_relaxed) != Mix
+                    && s.chan[Solo].load (std::memory_order_relaxed) > 0.5f) return true;
+            return false;
+        }
+        void setName (int slot, const juce::String& n)
+        {
+            if (slot < 0) return;
+            std::lock_guard<std::mutex> lock (mutex);
+            names[(size_t) slot] = n;
+        }
+        juce::String getName (int slot) const
+        {
+            if (slot < 0) return {};
+            std::lock_guard<std::mutex> lock (mutex);
+            return names[(size_t) slot];
+        }
+        /** Ścieżki (bez sum) w kolejności dodania. */
+        std::vector<int> trackSlots() const
+        {
+            std::vector<int> v;
+            for (int i = 0; i < maxSlots; ++i)
+                if (slots[(size_t) i].used.load() && slots[(size_t) i].source.load() != Mix) v.push_back (i);
+            std::sort (v.begin(), v.end(), [this] (int a, int b) { return slots[(size_t) a].order.load() < slots[(size_t) b].order.load(); });
+            return v;
+        }
 
         // --- ustępowanie: obwiednie stopy i głosu (z wątków audio) --------------
         void publishEnvelopes (int slot, float kick, float vocal)
@@ -128,9 +189,13 @@ namespace sxa
             std::atomic<int> source { 0 }, order { 0 };
             std::atomic<float> kick { 0.f }, vocal { 0.f };
             std::array<std::atomic<float>, kNumEqBands> bands {};
+            std::array<std::atomic<float>, NumFields> chan {}, remoteVal {};
+            std::array<std::atomic<int>, NumFields> remoteSeq {};
+            std::atomic<float> meterDb { -100.f };
         };
         std::array<Slot, maxSlots> slots;
-        std::mutex mutex;
+        std::array<juce::String, maxSlots> names;
+        mutable std::mutex mutex;
         int orderCounter = 0;
         std::atomic<int> generation { 0 }, requestedStyle { 0 }, undoGeneration { 0 };
     };

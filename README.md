@@ -148,6 +148,21 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 - **Prawdziwy dubel (2 podejścia)** – przełącznik w panelu „Na przesterze” (gitara). Prawy kanał dostaje drugie podejście *przed* kostką i piecem: inny rytm (do kilku ms, raz szybciej, raz wolniej), minimalne rozstrojenie, inna siła uderzenia. Przester z obu podejść jest więc różny, jak przy dwóch nagranych ścieżkach. *Panorama* rozsuwa podejścia, *Rozjazd* ustala, jak bardzo się różnią. Preset: *Gitara: Dwa podejścia, ściana*.
 - **Środek / boki** (strona 2, źródło „Cały miks”): *Mono dół* (boki bez dołu poniżej 20–250 Hz; 20 = wył., presety sumy: 80 Hz), *Góra boków* (±6 dB przy 5 kHz tylko na bokach), *Środek 2,5k* (±4 dB prezencji w środku – wokal i werbel do przodu/do tyłu).
 
+## Miksowanie nagranych ścieżek: mikser na sumie i panele źródeł
+
+**Jak ustawić projekt w FL Studio**
+1. Na każdą nagraną ścieżkę w mikserze FL wstaw Stonoga x Albini i wybierz źródło (gitara, bas, perkusja, wokal).
+2. Na Master wstaw jedną kopię ze źródłem *Cały miks*.
+3. Na stronie TOR kopii na Masterze jest **mikser ścieżek**: pasek na każdą ścieżkę z wtyczką – suwak (−inf…+12 dB), **M** (wycisz), **S** (solo), panorama, EQ góra/środek/dół i wskaźnik poziomu. Podwójne kliknięcie zeruje. Nazwy pasków to nazwy ścieżek z FL (albo źródło + numer).
+4. Zmiany z miksera zapisują się w kopii na danej ścieżce (parametry *Kanał: …*), więc projekt je pamięta, a ta sama ścieżka ma je też u siebie na stronie 2 w panelu **Kanał konsolety** (suwak, dół 100 Hz, środek z wyborem częstotliwości, góra 8 kHz, wycisz, solo).
+5. Potem AUTO-MIKS (styl w nagłówku) i ewentualnie poprawki suwakami. Suwak kanału jest niezależny od głośności ustawionej przez auto-miks.
+
+**Panele źródeł** (strona TOR, w miejscu kostki):
+- *Bębny*: stopa (60 Hz), pudło (cięcie 400 Hz), ciało werbla (200 Hz), trzask (5 kHz), talerze (9 kHz), atak, wybrzmienie, zgniecenie sali.
+- *Wokal*: bliskość (150 Hz), nos (cięcie 1 kHz), przód (3 kHz), powietrze (12 kHz), odsyczanie, krótkie echo.
+- *Bas* (obok kostki): DI / piec (ile czystego dołu z linii), dół (80 Hz), warkot (700 Hz), klik (2,5 kHz).
+- *Gitara*: kostka, piec i kolumna jak dotąd. *Cały miks*: mikser ścieżek.
+
 ## IR-y kabinetu
 
 - **Wbudowane IR-y** (Stonoga x Albini): 15 odpowiedzi 4x12 z głośnikami V30 z darmowej paczki Jesters Brutal Pack (CC0), pogrupowane na *ciemne / średnie / jasne*. Wybierasz je z listy przy slocie A i B, a blend miesza oba. Domyślnie gitara: A = średnia 2, B = ciemna 2. Szczegóły i licencja: `Resources/IR/LICENSE-IR.md`.

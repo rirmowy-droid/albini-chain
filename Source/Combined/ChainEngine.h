@@ -23,6 +23,7 @@
 #include "DeEsser.h"
 #include "DoubleTake.h"
 #include "MidSide.h"
+#include "SourceVoice.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -61,6 +62,8 @@ public:
     float getLimiterDb() const         { return limiter.getReductionDb(); }
     float getTransientDb() const       { return transient.getGainDb(); }
     float getDeEssDb() const           { return deEsser.getReductionDb(); }
+    /** Szczyt na wyjściu od ostatniego odczytu (dBFS) - wskaźnik w mikserze. */
+    float takeOutputPeakDb() { const float p = outPeak.exchange (0.f); return 20.f * std::log10 (p + 1e-6f); }
 
     // --- ciągłe dopasowanie barwy sumy: wolno uśredniane widmo (27 pasm) --------
     void getTrackedAlbumBandsDb (float* out) const;
@@ -114,6 +117,8 @@ private:
     DeEsser deEsser;
     DoubleTake doubleTake;
     MidSide midSide;
+    SourceVoice voice;
+    std::atomic<float> outPeak { 0.f };
     stonoga::Biquad trackBp[AlbumEq::numBands];
     std::array<std::atomic<float>, AlbumEq::numBands> trackMs {};
     std::atomic<float> trackSeconds { 0.f };
