@@ -32,6 +32,8 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels)
     guard.prepare (sampleRate, nch);
     duck.prepare (sampleRate);
     slap.prepare (sampleRate);
+    album.prepare (sampleRate);
+    for (int b = 0; b < AlbumEq::numBands; ++b) albumBp[b].bandpass ((float) sampleRate, AlbumEq::bandHz (b), AlbumEq::q);
     for (int b = 0; b < sxa::kNumEqBands; ++b) bandBp[b].bandpass ((float) sampleRate, sxa::kEqHz[b], 1.4f);
 
     faderGain.reset (sampleRate, 0.05);
@@ -45,6 +47,8 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels)
     {
         kHp[c].highpass ((float) sampleRate, 60.f, 0.7f);
         kShelf[c].highshelf ((float) sampleRate, 1500.f, 4.f);
+        kHpOut[c].highpass ((float) sampleRate, 60.f, 0.7f);
+        kShelfOut[c].highshelf ((float) sampleRate, 1500.f, 4.f);
     }
 }
 
@@ -60,6 +64,11 @@ void ChainEngine::getMeasuredBandsDb (float* out8) const
 {
     for (int b = 0; b < sxa::kNumEqBands; ++b)
         out8[b] = 10.f * std::log10 (bandMs[(size_t) b].load() + 1e-12f);
+}
+
+void ChainEngine::getMeasuredAlbumBandsDb (float* out26) const
+{
+    for (int b = 0; b < AlbumEq::numBands; ++b) out26[b] = 10.f * std::log10 (albumMs[(size_t) b].load() + 1e-15f);
 }
 
 float ChainEngine::getMeasuredDb() const
@@ -177,6 +186,9 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     busSpace.set (s.smear, s.width, 0.f, 0.55f);
     busSpace.process (block);
 
+    // --- barwa płyty (tylko na sumie) ----------------------------------------------
+    if (source == sxa::Mix) album.process (block, s.albumAmt);
+
     // --- pomiar -------------------------------------------------------------------------
     if (measureReset.exchange (false))
     {
@@ -184,6 +196,8 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         measuredMs = 0.f; activeSeconds = 0.f;
         for (int b = 0; b < sxa::kNumEqBands; ++b) { bandSq[b] = 0.0; bandMs[(size_t) b] = 0.f; bandBp[b].reset(); }
         midSq = sideSq = 0.0; midMs = 0.f; sideMs = 0.f;
+        outSq = 0.0; outCounted = 0; outMs = 0.f;
+        for (int b = 0; b < AlbumEq::numBands; ++b) { albumSq[b] = 0.0; albumMs[(size_t) b] = 0.f; albumBp[b].reset(); }
         for (int c = 0; c < 2; ++c) { kHp[c].reset(); kShelf[c].reset(); }
     }
     if (measuring.load())
@@ -193,11 +207,14 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         const auto* r = nCh > 1 ? block.getChannelPointer (1) : l;
         double bandBlock[sxa::kNumEqBands] {};
         double midBlock = 0.0, sideBlock = 0.0;
+        double albumBlock[AlbumEq::numBands] {};
+        const bool fine = source == sxa::Mix;   // 26 pasm mierzy tylko suma
         for (size_t i = 0; i < n; ++i)
         {
             const float m = 0.5f * (l[i] + r[i]);
             const float sd = 0.5f * (l[i] - r[i]);
             midBlock += (double) m * m; sideBlock += (double) sd * sd;
+            if (fine) for (int b = 0; b < AlbumEq::numBands; ++b) { const float y = albumBp[b].process (m); albumBlock[b] += (double) y * y; }
             for (int b = 0; b < sxa::kNumEqBands; ++b) { const float y = bandBp[b].process (m); bandBlock[b] += (double) y * y; }
         }
         for (size_t i = 0; i < n; ++i)   // moc obu kanałów: panorama ze stałą mocą jej nie zmienia
@@ -216,6 +233,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
                 bandMs[(size_t) b] = (float) (bandSq[b] / (double) counted);
             }
             midSq += midBlock; sideSq += sideBlock;
+            if (fine) for (int b = 0; b < AlbumEq::numBands; ++b) { albumSq[b] += albumBlock[b]; albumMs[(size_t) b] = (float) (albumSq[b] / (double) counted); }
             midMs = (float) (midSq / (double) counted);
             sideMs = (float) (sideSq / (double) counted);
             activeSeconds = (float) ((double) counted / sr);
@@ -242,4 +260,19 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     }
 
     guard.process (block, s.protect);
+
+    // pomiar na samym wyjściu (do doregulowania głośności sumy)
+    if (measuring.load())
+    {
+        const auto* l = block.getChannelPointer (0);
+        const auto* r = nCh > 1 ? block.getChannelPointer (1) : l;
+        double sq = 0.0;
+        for (size_t i = 0; i < n; ++i)
+        {
+            const float kl = kShelfOut[0].process (kHpOut[0].process (l[i]));
+            const float kr = kShelfOut[1].process (kHpOut[1].process (r[i]));
+            sq += 0.5 * ((double) kl * kl + (double) kr * kr);
+        }
+        if (sq / (double) n > 1e-6) { outSq += sq; outCounted += (long long) n; outMs = (float) (outSq / (double) outCounted); }
+    }
 }

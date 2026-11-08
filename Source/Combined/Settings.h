@@ -44,6 +44,7 @@ namespace sxa
 
         // modele sprzętu i techniki z lat 90.
         float consoleModel = 0, busCompChar = 0, compAllButtons = 0, roomPredelay = 0.f, slap = 0.f;
+        float albumAmt = 1.f;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
@@ -72,8 +73,10 @@ namespace sxa
         "Ciepła sala – przestrzeń i pogłos",
         "Smoła – ciemno, ciężko, podwójne głosy",
         "Czarne słońce – gęsto i szeroko",
+        "Łazienka w Bostonie – sucho, sala, dynamicznie",
+        "Debiut '90 – ciężko i dynamicznie",
     };
-    inline constexpr int kNumStyles = 5;
+    inline constexpr int kNumStyles = 7;
     inline const char* const kCompModeNames[] = { "Jedna gałka (auto)", "Ręczny" };
     inline const char* const kCompCharNames[] = { "Czysty (VCA)", "W stylu 1176 (FET)", "W stylu LA-2A (optyczny)",
                                                   "W stylu dbx 160 (VCA)", "W stylu vari-mu (lampowy)", "W stylu szyny SSL" };
@@ -125,6 +128,7 @@ namespace sxa
         { "consoleModel","Konsoleta: model",      "Model konsolety", &Settings::consoleModel, 0, 3, Kind::Choice },
         { "roomPredelay","Sala: opóźnienie",      "Opóźnienie sali", &Settings::roomPredelay, 0, 40, Kind::Millis },
         { "slap",       "Krótkie echo (slap)",    "Slap",         &Settings::slap,       0, 1,     Kind::Percent },
+        { "albumAmt",   "Barwa płyty: siła",      "Barwa płyty",  &Settings::albumAmt,   0, 1,     Kind::Percent },
         { "compThresh", "Kompresor: próg",        "Próg",         &Settings::compThresh,-40, 0,    Kind::Decibel },
         { "compRatio",  "Kompresor: ratio",       "Ratio",        &Settings::compRatio,  1, 20,    Kind::Ratio },
         { "compAttack", "Kompresor: atak",        "Atak",         &Settings::compAttack, 0.1f, 100, Kind::Millis },

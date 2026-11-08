@@ -59,6 +59,8 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
     static juce::Identifier irProperty (int slot);
     void restoreCabIRsFromState();
+    void setAlbumGains (const float* gains);     // nullptr = wyzeruj
+    void restoreAlbumFromState();
     void setParam (const char* id, float value);
     float paramValue (const char* id) const;
     void readSettings (sxa::Settings& s, stonoga::Params& p) const;
@@ -73,11 +75,12 @@ private:
     std::array<std::atomic<float>*, sxa::kNumPedal> pedalParams {};
 
     // auto-miks
-    enum class AM { Idle, Listening, WaitingForPeers, WaitingForTracks, ListeningMix };
+    enum class AM { Idle, Listening, WaitingForPeers, WaitingForTracks, ListeningMix, ListeningMix2 };
     AM amState = AM::Idle;
     int registrySlot = -1, seenGeneration = 0, amStyle = 0;
     double amStart = 0.0, amPeersStart = 0.0;
     std::array<float, sxa::kNumEqBands> myBands {};
+    std::array<float, AlbumEq::numBands> albumTarget {};
     juce::String lastGainText;
     static int eqParamIndex (int band);
     juce::String autoStatus { juce::String::fromUTF8 ("Auto-miks: wybierz styl i kliknij") };

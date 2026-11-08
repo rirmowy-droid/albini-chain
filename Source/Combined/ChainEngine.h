@@ -16,6 +16,7 @@
 #include "EarGuard.h"
 #include "DuckStage.h"
 #include "SlapEcho.h"
+#include "AlbumEq.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -55,9 +56,13 @@ public:
     void stopMeasuring()   { measuring = false; }
     float getMeasuredDb() const;
     float getMeasuredSeconds() const { return activeSeconds.load(); }
+    /** Głośność na samym wyjściu (za suwakiem i limiterem), dB K. */
+    float getMeasuredOutputDb() const { return 10.f * std::log10 (outMs.load() + 1e-12f); }
     /** Widmo z pomiaru: energia w 8 pasmach (dB), jak na wyjściu przed suwakiem. */
     void getMeasuredBandsDb (float* out8) const;
     /** Szerokość stereo z pomiaru: energia strony względem środka (dB). */
+    void getMeasuredAlbumBandsDb (float* out26) const;
+    AlbumEq& albumEq() { return album; }
     float getMeasuredSideToMidDb() const { return 10.f * std::log10 ((sideMs.load() + 1e-12f) / (midMs.load() + 1e-12f)); }
 
 private:
@@ -82,12 +87,19 @@ private:
     EarGuard guard;
     DuckStage duck;
     SlapEcho slap;
+    AlbumEq album;
+    stonoga::Biquad albumBp[AlbumEq::numBands];
+    double albumSq[AlbumEq::numBands] {};
+    std::array<std::atomic<float>, AlbumEq::numBands> albumMs {};
     float scKick = 0.f, scVocal = 0.f;
     std::atomic<float> pubKick { 0.f }, pubVocal { 0.f };
     stonoga::Biquad bandBp[sxa::kNumEqBands];
     double bandSq[sxa::kNumEqBands] {};
     std::array<std::atomic<float>, sxa::kNumEqBands> bandMs {};
     double midSq = 0, sideSq = 0;
+    stonoga::Biquad kHpOut[2], kShelfOut[2];
+    double outSq = 0; long long outCounted = 0;
+    std::atomic<float> outMs { 0.f };
     std::atomic<float> midMs { 0.f }, sideMs { 0.f };
 
     juce::SmoothedValue<float> faderGain, panL, panR;

@@ -179,6 +179,20 @@ namespace sxa
             { 0.20f, 0.50f, 0.0f, 0.35f, 0.35f, 0.60f,  0.0f, 0.3f, 0.3f, 0.30f, 0.25f, 0.40f, 0.60f,  0.30f, 0.0f, 0.0f, MicDynamic,   0.15f,  90,  0.0f,   1.0f },
             { 0.00f, 0.30f, 0.0f, 0.40f, 0.40f, 0.00f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.45f, 0.4f, 0.10f, MicNone,     0.00f,  25,  0.0f, -12.5f },
         },
+        { // Łazienka w Bostonie (Surfer Rosa, Albini 1987): sucho z bliska + dużo sali, mało kompresji
+            { 0.30f, 0.30f, 0.0f, 0.25f, 0.40f, 0.15f,  0.0f, 0.3f, 0.4f, 0.60f, 0.45f, 0.00f, 0.30f,  0.00f, 0.0f, 0.0f, MicNone,      0.15f,  90, -1.0f,  -4.0f },
+            { 0.10f, 0.30f, 0.0f, 0.30f, 0.45f, 0.25f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.00f, 0.0f, 0.0f, MicNone,      0.10f,  30,  0.0f,  -3.5f },
+            { 0.45f, 0.40f, 0.2f, 0.30f, 0.40f, 0.15f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.00f, 0.0f, 0.0f, MicCondenser, 0.10f,  25,  0.0f,   0.0f },
+            { 0.35f, 0.20f, 0.0f, 0.25f, 0.35f, 0.30f,  0.0f, 0.3f, 0.3f, 0.00f, 0.00f, 0.00f, 0.30f,  0.00f, 0.0f, 0.0f, MicDynamic,   0.10f,  90,  0.0f,  -1.0f },
+            { 0.00f, 0.30f, 0.0f, 0.25f, 0.40f, 0.00f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.00f, 0.2f, 0.0f, MicNone,      0.00f,  25,  0.0f, -20.0f },
+        },
+        { // Debiut '90 (Facelift): ciężko, raczej sucho, dynamicznie
+            { 0.15f, 0.40f, 0.0f, 0.30f, 0.40f, 0.45f,  0.0f, 0.3f, 0.4f, 0.70f, 0.30f, 0.10f, 0.40f,  0.20f, 0.0f, 0.0f, MicNone,     -0.10f,  90, -2.0f,  -4.5f },
+            { 0.05f, 0.30f, 0.0f, 0.35f, 0.45f, 0.45f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.20f, 0.0f, 0.0f, MicNone,     -0.10f,  30,  0.0f,  -2.5f },
+            { 0.25f, 0.45f, 0.3f, 0.30f, 0.40f, 0.35f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.10f, 0.40f,  0.20f, 0.0f, 0.0f, MicCondenser, 0.00f,  25,  0.0f,   0.0f },
+            { 0.15f, 0.40f, 0.0f, 0.30f, 0.35f, 0.55f,  0.1f, 0.25f,0.3f, 0.30f, 0.40f, 0.20f, 0.45f,  0.25f, 0.0f, 0.0f, MicDynamic,   0.00f,  90,  0.0f,   0.5f },
+            { 0.00f, 0.30f, 0.0f, 0.30f, 0.40f, 0.00f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.20f, 0.25f,0.05f, MicNone,     0.00f,  25,  0.0f, -15.0f },
+        },
     };
 
     /** Sprzęt i techniki dla stylu (konsoleta, charakter kompresorów, opóźnienie sali, slap).
@@ -196,6 +210,10 @@ namespace sxa
             { 2, 1, 5,  8, 0.00f }, { 2, 1, 5,  0, 0.00f }, { 2, 1, 5, 10, 0.00f }, { 2, 2, 5,  6, 0.05f }, { 2, 0, 5, 0, 0.f } },
         { // Czarne słońce: brytyjskie preampy, 1176, szyna SSL na sumie
             { 1, 1, 5,  8, 0.00f }, { 1, 1, 5,  0, 0.00f }, { 1, 1, 5, 12, 0.00f }, { 1, 1, 5,  8, 0.10f }, { 1, 0, 5, 0, 0.f } },
+        { // Łazienka w Bostonie: konsoleta dobrana do jasnego, twardego brzmienia; dbx na bębnach, 1176 na wokalu, bez kompresji sumy
+            { 2, 0, 0,  8, 0.00f }, { 2, 2, 0,  0, 0.00f }, { 2, 3, 0, 15, 0.00f }, { 2, 1, 0,  6, 0.00f }, { 2, 0, 0, 0, 0.f } },
+        { // Debiut '90: brytyjska konsoleta, 1176, LA-2A na wokalu
+            { 1, 1, 5,  8, 0.00f }, { 1, 1, 5,  0, 0.00f }, { 1, 1, 5, 10, 0.00f }, { 1, 2, 5,  6, 0.05f }, { 1, 0, 5, 0, 0.f } },
     };
 
     /** Bębny (punkt odniesienia) mają trafić na tyle dB RMS przed sumą. */
@@ -220,18 +238,18 @@ namespace sxa
         for (auto m : kEqMembers) s.*m = 0.f;              // korekta barwy liczona od zera
 
         // ustępowanie: bas stopie, gitary wokalowi (styl decyduje, jak mocno)
-        static const float kickDuck[kNumStyles]  = { 4.f, 2.f, 3.f, 3.f, 4.5f };
-        static const float vocalDuck[kNumStyles] = { 2.5f, 1.f, 2.f, 2.5f, 3.f };
+        static const float kickDuck[kNumStyles]  = { 4.f, 2.f, 3.f, 3.f, 4.5f, 2.f, 3.5f };
+        static const float vocalDuck[kNumStyles] = { 2.5f, 1.f, 2.f, 2.5f, 3.f, 1.f, 2.5f };
         s.duckKick = (src == Bass && ctx.drums > 0) ? kickDuck[style] : 0.f;
         s.duckLowOnly = 1.f;
-        s.duckRelease = style == 1 ? 90.f : 130.f;
+        s.duckRelease = (style == 1 || style == 5) ? 90.f : 130.f;
         s.duckVocal = (src == Guitar && ctx.vocals > 0) ? vocalDuck[style] : 0.f;
 
         const Gear& g = kGear[style][src];
         s.consoleModel = g.console; s.compChar = g.compChar; s.busCompChar = g.busChar;
         s.roomPredelay = g.predelayMs; s.slap = g.slap;
         s.compMode = 0.f;   // auto-miks pracuje na „jednej gałce”: progi zależą od gałki, nie od poziomu sesji
-        if (style == 1) s.busComp = 0.f;   // Albini: bez kompresji na sumie
+        if (style == 1 || style == 5) s.busComp = 0.f;   // Albini: bez kompresji na sumie
 
         if (src == Guitar)
         {
@@ -241,7 +259,7 @@ namespace sxa
             {
                 // kilka gitar: każda węższa, rozstawione na boki (jak dwa nagrania)
                 s.srcWidth = std::min (s.srcWidth, 0.35f);
-                const float hard = style == 1 ? 1.0f : (style == 3 ? 0.6f : 0.8f);   // In Utero bardzo szeroko, Dirt węziej (pomiar płyt)
+                const float hard = (style == 1 || style == 5) ? 1.0f : (style == 3 ? 0.6f : 0.8f);   // Albini bardzo szeroko, Dirt węziej (pomiar płyt)
                 static const float order[] = { -1.f, 1.f, 0.f, -0.5f, 0.5f, -0.75f, 0.75f };
                 const int k = std::min (ctx.guitarIndex, 6);
                 s.pan = order[k] * (k < 2 ? hard : 1.f);
@@ -249,15 +267,6 @@ namespace sxa
         }
     }
 
-    /** Głośność względem bębnów (dla sumy: docelowy poziom całości). */
-    inline float targetDb (int style, int source, const MixContext& ctx)
-    {
-        const Template& t = kTemplates[style][source];
-        if (source == Mix) return t.relDb;
-        float rel = t.relDb;
-        if (source == Guitar && ctx.guitars >= 2) rel -= ctx.guitars >= 3 ? 3.f : 1.5f;
-        return kDrumsTargetDb + rel;
-    }
 
     /** Kto „rządzi” w danym paśmie (1 = najważniejszy). Pasma: 60, 125, 250, 500, 1k, 2k, 4k, 8k. */
     inline const int kBandPriority[4][kNumEqBands] = {
@@ -312,18 +321,51 @@ namespace sxa
         }
     }
 
-    /** Krzywe barwy płyt (8 pasm, dB względem średniej) i szerokość stereo (strona względem
-        środka, dB), zmierzone z pełnych plików stereo tym samym miernikiem, którego używa wtyczka.
-          Chicago: In Utero (Scentless Apprentice, Milk It - miksy Albiniego)
-          Smoła:   Dirt (Sickman, Down in a Hole) */
-    struct AlbumCurve { bool has; float db[kNumEqBands]; float sideToMidDb; const char* name; };
+    /** Brzmienie płyt zmierzone z pełnych plików stereo (tym samym miernikiem co wtyczka):
+        barwa w 26 pasmach co 1/3 oktawy (40 Hz - 12,5 kHz, dB względem średniej 60 Hz - 8 kHz),
+        szerokość stereo (strona względem środka) i głośność (średnia K).
+          Chicago:            In Utero - Scentless Apprentice, Milk It
+          Smoła:              Dirt - Sickman, Down in a Hole
+          Czarne słońce:      Black Hole Sun (master ze składanki z 2023 r.)
+          Łazienka w Bostonie: Surfer Rosa - Where Is My Mind?
+          Debiut '90:         Facelift - Love, Hate, Love */
+    struct AlbumCurve { bool has; float db[26]; float sideToMidDb; float loudDb; const char* name; };
     inline const AlbumCurve kAlbumCurves[kNumStyles] = {
-        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, 0.f, "" },
-        { true,  { 3.37f, 6.05f, 1.55f, -1.62f, -1.03f, 0.31f, -2.17f, -6.45f }, -5.2f, "In Utero" },
-        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, 0.f, "" },
-        { true,  { 0.96f, 1.83f, 1.68f, 1.73f, 1.68f, 1.04f, -1.99f, -6.93f }, -8.8f, "Dirt" },
-        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, 0.f, "" },
+        { false, {}, 0.f, 0.f, "" },
+        { true, { -4.3f, -0.6f, 3.5f, 6.2f, 7.4f, 7.1f, 5.3f, 2.5f, -0.3f, -2.1f, -3.0f, -3.0f, -1.9f, -1.1f, -1.2f, -1.4f, 0.1f, 1.4f, 0.9f, -1.0f, -2.4f, -4.4f, -5.5f, -7.0f, -9.8f, -14.4f }, -5.2f, -12.6f, "In Utero" },
+        { false, {}, 0.f, 0.f, "" },
+        { true, { -5.9f, -2.2f, 1.9f, 2.9f, 1.8f, 1.4f, 1.4f, 1.2f, 1.2f, 1.8f, 0.9f, 1.1f, 2.0f, 1.6f, 1.2f, 1.1f, 1.6f, 1.1f, -0.3f, -1.6f, -2.4f, -5.0f, -6.7f, -8.2f, -11.0f, -14.5f }, -8.8f, -11.6f, "Dirt" },
+        { true, { -4.9f, -0.3f, 2.8f, 2.9f, 4.4f, 4.0f, 2.2f, 2.4f, 1.4f, -0.2f, 0.0f, 0.2f, 0.8f, 0.6f, 0.2f, -1.0f, -1.5f, -1.0f, -0.3f, -1.6f, -2.8f, -4.2f, -3.7f, -5.7f, -9.7f, -15.0f }, -6.6f, -10.4f, "Black Hole Sun" },
+        { true, { -3.5f, 1.1f, 2.3f, 1.6f, 3.7f, 4.0f, 3.3f, 3.7f, 2.0f, 2.6f, -0.2f, -0.2f, 4.0f, 0.5f, -0.8f, -1.0f, -1.1f, -0.4f, -1.5f, -1.8f, -2.7f, -4.6f, -6.0f, -7.4f, -8.9f, -11.7f }, -5.2f, -19.9f, "Surfer Rosa" },
+        { true, { -6.9f, -3.0f, 0.5f, 1.3f, 1.5f, 3.4f, 2.4f, 1.6f, 2.0f, 1.4f, -0.5f, -0.1f, 2.7f, 3.3f, 1.8f, 1.0f, 1.1f, 0.8f, 0.8f, -0.4f, -2.5f, -5.4f, -7.5f, -9.3f, -11.9f, -16.3f }, -6.2f, -14.9f, "Facelift" },
     };
+
+    /** Pasma 26-pasmowego miernika liczone do średniej (jak w krzywych): 60 Hz - 8 kHz. */
+    inline bool inAlbumMeanRange (int b) { const float hz = 31.5f * std::pow (2.f, (float) (b + 1) / 3.f); return hz >= 60.f && hz <= 8100.f; }
+
+    /** Docelowa korekta sumy (dB w środkach 26 pasm): różnica do płyty, wygładzona
+        (żeby nie gonić pojedynczych dźwięków utworu), bez zmiany głośności, maks. +-6 dB. */
+    inline bool computeAlbumTarget (int style, const float* measured26, float* target26)
+    {
+        const auto& c = kAlbumCurves[style];
+        if (! c.has) { for (int b = 0; b < 26; ++b) target26[b] = 0.f; return false; }
+        float mean = 0.f; int n = 0;
+        for (int b = 0; b < 26; ++b) if (inAlbumMeanRange (b)) { mean += measured26[b]; ++n; }
+        mean /= (float) n;
+        float diff[26];
+        for (int b = 0; b < 26; ++b) diff[b] = c.db[b] - (measured26[b] - mean);
+        float sm[26];
+        for (int b = 0; b < 26; ++b)
+        {
+            const float l = diff[std::max (0, b - 1)], r = diff[std::min (25, b + 1)];
+            sm[b] = 0.25f * l + 0.5f * diff[b] + 0.25f * r;
+        }
+        float dmean = 0.f; n = 0;
+        for (int b = 0; b < 26; ++b) if (inAlbumMeanRange (b)) { dmean += sm[b]; ++n; }
+        dmean /= (float) n;
+        for (int b = 0; b < 26; ++b) target26[b] = std::max (-6.f, std::min (6.f, sm[b] - dmean));
+        return true;
+    }
 
     /** Panorama sumy (tryb poszerzania M/S, tylko powyżej ~150 Hz) tak, żeby strona względem
         środka zbliżyła się do płyty. Poszerzać umiemy, zwężać nie: zbyt szeroki miks -> 0. */
@@ -332,27 +374,21 @@ namespace sxa
         const auto& c = kAlbumCurves[style];
         if (! c.has) return currentWidth;
         const float needDb = c.sideToMidDb - measuredSideToMidDb;          // o ile podnieść stronę
-        if (std::abs (needDb) < 1.f) return currentWidth;                  // wystarczająco blisko - nie ruszamy
+        if (std::abs (needDb) < 0.7f) return currentWidth;                 // wystarczająco blisko - nie ruszamy
         // obecna panorama już podnosi stronę o ~20*log10(1 + 1.2*w) (dla pasma > 150 Hz)
         const float haveDb = 20.f * std::log10 (1.f + 1.2f * currentWidth);
         const float totalDb = std::max (0.f, haveDb + needDb);
         return std::max (0.f, std::min (1.f, (std::pow (10.f, totalDb / 20.f) - 1.f) / 1.2f));
     }
 
-    /** Korekta sumy w stronę krzywej płyty: 60% różnicy, najwyżej +-4 dB na pasmo.
-        Średnia korekty = 0, więc głośność całości się nie zmienia. */
-    inline bool computeAlbumMatch (int style, const float* measuredDb, float* outDb)
+
+    /** Głośność względem bębnów (dla sumy: docelowy poziom całości). */
+    inline float targetDb (int style, int source, const MixContext& ctx)
     {
-        const auto& c = kAlbumCurves[style];
-        if (! c.has) { for (int b = 0; b < kNumEqBands; ++b) outDb[b] = 0.f; return false; }
-        float mean = 0.f;
-        for (int b = 0; b < kNumEqBands; ++b) mean += measuredDb[b];
-        mean /= (float) kNumEqBands;
-        float diff[kNumEqBands], dmean = 0.f;
-        for (int b = 0; b < kNumEqBands; ++b) { diff[b] = c.db[b] - (measuredDb[b] - mean); dmean += diff[b]; }
-        dmean /= (float) kNumEqBands;
-        for (int b = 0; b < kNumEqBands; ++b)
-            outDb[b] = std::round (std::max (-4.f, std::min (4.f, 0.6f * (diff[b] - dmean))) * 10.f) / 10.f;
-        return true;
+        const Template& t = kTemplates[style][source];
+        if (source == Mix) return kAlbumCurves[style].has ? kAlbumCurves[style].loudDb : t.relDb;   // głośność jak na płycie
+        float rel = t.relDb;
+        if (source == Guitar && ctx.guitars >= 2) rel -= ctx.guitars >= 3 ? 3.f : 1.5f;
+        return kDrumsTargetDb + rel;
     }
 }

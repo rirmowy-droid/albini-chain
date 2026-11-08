@@ -348,6 +348,7 @@ void CombinedProcessor::timerCallback()
                     for (const auto& def : sxa::kParams)
                         if (juce::String (def.id) == id) setParam (id, s.*(def.mem));
                 setParam ("autoGain", 0.f);
+                setAlbumGains (nullptr);                 // mierzymy bez starej barwy płyty
                 engine.startMeasuring();
                 amState = AM::ListeningMix;
                 amStart = now;
@@ -356,33 +357,57 @@ void CombinedProcessor::timerCallback()
             break;
 
         case AM::ListeningMix:
+        case AM::ListeningMix2:
         {
+            const bool second = amState == AM::ListeningMix2;
             const double heard = engine.getMeasuredSeconds();
-            if (elapsed < 0.6) { engine.startMeasuring(); break; }   // niech zmiany na ścieżkach się ułożą
-            autoStatus = pl ("Auto-miks: słucham całości… ") + juce::String (juce::jmin (heard, listenSeconds), 1) + " s";
-            if (heard >= listenSeconds || elapsed >= listenTimeout)
+            if (elapsed < 0.6) { engine.startMeasuring(); break; }   // niech zmiany się ułożą
+            autoStatus = (second ? pl ("Auto-miks: sprawdzam wynik na sumie… ") : pl ("Auto-miks: słucham całości… "))
+                       + juce::String (juce::jmin (heard, listenSeconds), 1) + " s";
+            if (heard < listenSeconds && elapsed < listenTimeout)
+                break;
+
+            engine.stopMeasuring();
+            const auto& curve = sxa::kAlbumCurves[amStyle];
+            juce::String matchText;
+            if (heard > 1.0)
             {
-                engine.stopMeasuring();
-                juce::String matchText;
-                if (heard > 1.0)
+                if (! second)
                 {
                     const float gain = juce::jlimit (-24.f, 24.f, sxa::targetDb (amStyle, sxa::Mix, ctx) - engine.getMeasuredDb() - paramValue ("outputGain"));
                     setParam ("autoGain", gain);
-
-                    // barwa całości w stronę krzywej płyty (jeśli styl ją ma)
-                    float bands[sxa::kNumEqBands], eq[sxa::kNumEqBands];
-                    engine.getMeasuredBandsDb (bands);
-                    if (sxa::computeAlbumMatch (amStyle, bands, eq))
-                    {
-                        for (int b = 0; b < sxa::kNumEqBands; ++b) setParam (sxa::kParams[eqParamIndex (b)].id, eq[b]);
-                        setParam ("width", sxa::computeAlbumWidth (amStyle, engine.getMeasuredSideToMidDb(), paramValue ("width")));
-                        matchText = pl (", barwa i szerokość jak ") + pl (sxa::kAlbumCurves[amStyle].name);
-                    }
                 }
-                const int tracks = ctx.guitars + ctx.basses + ctx.vocals + reg.countSource (sxa::Drums);
-                amState = AM::Idle;
-                autoStatus = pl ("Auto-miks: gotowe – ") + juce::String (tracks) + pl (" ścieżek, styl: ") + pl (sxa::kStyleNames[amStyle]) + matchText;
+                else
+                {
+                    // za limiterem: dociągnij głośność (limiter zjada część podgłośnienia)
+                    const float miss = sxa::targetDb (amStyle, sxa::Mix, ctx) - engine.getMeasuredOutputDb();
+                    setParam ("autoGain", juce::jlimit (-24.f, 24.f, paramValue ("autoGain") + juce::jlimit (-6.f, 6.f, miss)));
+                }
+
+                // barwa: 26 pasm co 1/3 oktawy; w drugim przebiegu dociągamy resztę różnicy
+                float bands[AlbumEq::numBands], diff[AlbumEq::numBands], gains[AlbumEq::numBands];
+                engine.getMeasuredAlbumBandsDb (bands);
+                if (sxa::computeAlbumTarget (amStyle, bands, diff))
+                {
+                    for (int b = 0; b < AlbumEq::numBands; ++b)
+                        albumTarget[(size_t) b] = juce::jlimit (-8.f, 8.f, (second ? albumTarget[(size_t) b] : 0.f) + diff[b]);
+                    AlbumEq::fit ((float) getSampleRate(), albumTarget.data(), gains);
+                    setAlbumGains (gains);
+                    setParam ("width", sxa::computeAlbumWidth (amStyle, engine.getMeasuredSideToMidDb(), paramValue ("width")));
+                    matchText = pl (", barwa, szerokość i głośność jak ") + pl (curve.name);
+                }
             }
+
+            if (! second && curve.has && heard > 1.0)
+            {
+                amState = AM::ListeningMix2;
+                amStart = now;
+                engine.startMeasuring();
+                break;
+            }
+            const int tracks = ctx.guitars + ctx.basses + ctx.vocals + reg.countSource (sxa::Drums);
+            amState = AM::Idle;
+            autoStatus = pl ("Auto-miks: gotowe – ") + juce::String (tracks) + pl (" ścieżek, styl: ") + pl (sxa::kStyleNames[amStyle]) + matchText;
             break;
         }
     }
@@ -418,6 +443,26 @@ juce::String CombinedProcessor::getCabIRDisplayName (int slot) const
     return const_cast<ChainEngine&> (engine).cabinet().hasIR (slot) ? f.getFileName() : pl ("brak pliku: ") + f.getFileName();
 }
 
+void CombinedProcessor::setAlbumGains (const float* gains)
+{
+    float g[AlbumEq::numBands] {};
+    if (gains != nullptr) std::copy (gains, gains + AlbumEq::numBands, g);
+    engine.albumEq().setGains (g);
+    juce::StringArray parts;
+    for (float v : g) parts.add (juce::String (v, 2));
+    apvts.state.setProperty ("albumEq", parts.joinIntoString (","), nullptr);
+}
+
+void CombinedProcessor::restoreAlbumFromState()
+{
+    juce::StringArray parts;
+    parts.addTokens (apvts.state.getProperty ("albumEq").toString(), ",", "");
+    float g[AlbumEq::numBands] {};
+    if (parts.size() == AlbumEq::numBands)
+        for (int b = 0; b < AlbumEq::numBands; ++b) g[b] = parts[b].getFloatValue();
+    engine.albumEq().setGains (g);
+}
+
 void CombinedProcessor::restoreCabIRsFromState()
 {
     for (int slot = 0; slot < 2; ++slot)
@@ -443,6 +488,7 @@ void CombinedProcessor::setStateInformation (const void* data, int sizeInBytes)
         {
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
             restoreCabIRsFromState();
+            restoreAlbumFromState();
         }
 }
 

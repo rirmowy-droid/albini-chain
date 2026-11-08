@@ -182,14 +182,15 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     lowOnlyButton.setButtonText (pl ("tylko dół (< 150 Hz)"));
     lowOnlyAtt = std::make_unique<ButtonAtt> (p.apvts, "duckLowOnly", lowOnlyButton);
 
-    addKnob (eqKnobs, "autoEqAmt", pl ("Siła"), false);
+    addKnob (eqKnobs, "albumAmt", pl ("Barwa płyty (suma)"), false);
+    addKnob (eqKnobs, "autoEqAmt", pl ("Siła korekty"), false);
     for (int b = 0; b < sxa::kNumEqBands; ++b)
     {
         const char* id = nullptr;
         for (const auto& d : sxa::kParams) if (d.mem == sxa::kEqMembers[b]) id = d.id;
         addKnob (eqKnobs, id, pl (shortNameFor (id)) + " Hz", false, true);
     }
-    styleLabel (eqInfo, pl ("Ustawia auto-miks: tam, gdzie ważniejszy instrument jest głośny, ta ścieżka robi mu miejsce. Możesz poprawić ręcznie."),
+    styleLabel (eqInfo, pl ("Suwaki: korekta ścieżki ustawiana przez auto-miks (robi miejsce ważniejszym instrumentom). „Barwa płyty”: na sumie – siła dopasowania do płyty w 26 pasmach."),
                 juce::Colours::grey, 12.f, false);
 
     for (auto* list : { &compKnobs, &duckKnobs, &eqKnobs })

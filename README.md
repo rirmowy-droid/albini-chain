@@ -47,15 +47,24 @@ Na czym oparte są style (to inspiracja, nie kopia brzmienia płyt):
 - *Smoła* – Dirt (Dave Jerden): kilka pieców mieszanych pasmami, trzy U87 jako mikrofony sali, phaser i delay na gitarach, analogowa taśma.
 - *Czarne słońce* – Superunknown (Bad Animals, preampy Neve, taśma Studer).
 
-### Barwa i szerokość płyty (auto-miks na sumie)
-W stylach **Chicago** i **Smoła** kopia na sumie mierzy miks i zbliża go do płyty: barwę w 8 pasmach (60% różnicy, maks. ±4 dB, bez zmiany głośności) i szerokość stereo (panorama M/S powyżej 150 Hz). Krzywe zmierzone z pełnych plików stereo tym samym miernikiem, którego używa wtyczka:
+### Brzmienie płyty (auto-miks na sumie)
+W stylach z krzywą kopia na sumie (źródło „Cały miks”) dopasowuje miks do płyty w **dwóch przebiegach**:
+1. mierzy miks w **26 pasmach co 1/3 oktawy** (40 Hz – 12,5 kHz), szerokość stereo i głośność, ustawia korektor „barwa płyty” (filtry dopasowane iteracyjnie, żeby nakładające się pasma dały dokładnie zadaną krzywą), panoramę M/S i głośność,
+2. słucha jeszcze raz po korekcie i dociąga resztę różnicy; głośność mierzy za limiterem.
 
-| | 60 | 125 | 250 | 500 | 1k | 2k | 4k | 8k | strona/środek |
-|---|---|---|---|---|---|---|---|---|---|
-| In Utero (Scentless Apprentice, Milk It) | +3,4 | +6,1 | +1,6 | −1,6 | −1,0 | +0,3 | −2,2 | −6,5 | −5,2 dB (bardzo szeroko) |
-| Dirt (Sickman, Down in a Hole) | +1,0 | +1,8 | +1,7 | +1,7 | +1,7 | +1,0 | −2,0 | −6,9 | −8,8 dB (węziej, dół w środku) |
+Gałka **Barwa płyty** (strona KOMPRESOR I MIKS) ustala siłę dopasowania. Na syntetycznym zespole odchylenie barwy od płyty spada z 3,3–4,5 dB do 1,0–1,6 dB, szerokość trafia z dokładnością do 0,4 dB, głośność do ~1 dB.
 
-Inne obserwacje: In Utero ma nawet dół rozłożony w stereo (korelacja L/R < 150 Hz ok. 0,65 – mikrofony sali), Dirt ma dół w środku (0,85–0,9). Pozostałe style dostaną krzywe, gdy pojawią się pliki referencyjne.
+Krzywe zmierzone z pełnych plików stereo:
+
+| styl | płyta (utwory) | strona/środek | głośność K |
+|---|---|---|---|
+| Chicago bez litości | In Utero (Scentless Apprentice, Milk It) | −5,2 dB | −12,6 dB |
+| Smoła | Dirt (Sickman, Down in a Hole) | −8,8 dB | −11,6 dB |
+| Czarne słońce | Black Hole Sun (master ze składanki z 2023 r.) | −6,6 dB | −10,4 dB |
+| Łazienka w Bostonie | Surfer Rosa (Where Is My Mind?) | −5,2 dB | −19,9 dB |
+| Debiut '90 | Facelift (Love, Hate, Love) | −6,2 dB | −14,9 dB |
+
+Seattle '91 i Ciepła sala nie mają jeszcze krzywych (brak plików z Nevermind i Ten). Konsolety w stylach Łazienka i Debiut '90 dobrane są do brzmienia, nie z dokumentacji sesji.
 
 ### Auto-miks
 Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę (źródło „Cały miks”). Wybierz styl i kliknij **AUTO-MIKS** w dowolnej kopii, a potem zagraj ~6 s utworu:
@@ -64,12 +73,14 @@ Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę 
 3. **korekta barwy**: każda ścieżka porównuje swoje widmo z widmami pozostałych i robi miejsce tam, gdzie ważniejszy instrument jest głośny (np. gitary oddają dół basowi, a środek-górę wokalowi; wokal oddaje dół), a tam, gdzie sama jest najważniejsza i przykryta – lekko się podbija,
 4. suma czeka na wszystkie ścieżki, mierzy całość i ustawia obróbkę oraz głośność końcową.
 
-Style (inspirowane brzmieniem płyt grunge’owych początku lat 90.):
+Style (inspirowane brzmieniem płyt grunge’owych przełomu lat 80. i 90.):
 - **Seattle '91** – jasno i zbito (zwarte bębny, gitary szeroko, wokal z przodu)
 - **Chicago bez litości** – surowo, dużo sali, mało kompresji (styl Albiniego)
 - **Ciepła sala** – przestrzeń i pogłos, cieplej
 - **Smoła** – ciemno, ciężko, chorus na gitarach, podwójne głosy
 - **Czarne słońce** – gęsto i szeroko, ciężkie gitary
+- **Łazienka w Bostonie** – Albini 1987: sucho z bliska, dużo sali, mało kompresji, dynamicznie
+- **Debiut '90** – ciężko, raczej sucho, dynamicznie
 
 Działa, gdy program muzyczny trzyma wtyczki w jednym procesie (domyślnie: FL Studio, Reaper, Ableton, Cubase). W aplikacji bez DAW auto-miks ustawia jedno źródło.
 
