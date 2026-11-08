@@ -53,6 +53,8 @@ namespace sxa
         // piec, jakość, mikrofon przy kolumnie
         float ampModel = 0, ampPresence = 0.f, ampResonance = 0.f, ampSag = 0.3f, hq = 0;
         float cabMic = 0, micPos = 0.5f, micDist = 0.3f, cabAlign = 1;
+        // magnetofon, atak/wybrzmienie, odsyczanie
+        float tapeModel = 0, tapeSpeed = 0, trAttack = 0.f, trSustain = 0.f, deEss = 0.f;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
@@ -95,6 +97,9 @@ namespace sxa
     inline constexpr int kNumAmps = 5;
     inline const char* const kCabMicNames[] = { "Jak w IR (SM57)", "SM57", "MD421", "Wstęgowy (w stylu R-121)", "Pojemnościowy (w stylu U87)" };
     inline constexpr int kNumCabMics = 5;
+    inline const char* const kTapeNames[] = { "Ogólny 2\"", "W stylu Studera A827", "W stylu MCI JH-24", "W stylu Ampexa MM1200" };
+    inline constexpr int kNumTapes = 4;
+    inline const char* const kTapeSpeedNames[] = { "30 cali/s", "15 cali/s" };
     inline const char* const kConsoleNames[] = { "Ogólna", "Brytyjska (w stylu Neve)", "Amerykańska (w stylu API)", "Czysta in-line (w stylu SSL/Neotek)" };
     inline constexpr int kNumConsoles = 4;
 
@@ -117,6 +122,11 @@ namespace sxa
         { "cabMic",     "Mikrofon przy kolumnie", "Mikrofon",     &Settings::cabMic,     0, kNumCabMics - 1, Kind::Choice },
         { "micPos",     "Mikrofon: środek / brzeg", "Pozycja",    &Settings::micPos,     0, 1,     Kind::Percent },
         { "micDist",    "Mikrofon: odległość",    "Odległość",    &Settings::micDist,    0, 1,     Kind::Percent },
+        { "tapeModel",  "Taśma: magnetofon",      "Magnetofon",   &Settings::tapeModel,  0, kNumTapes - 1, Kind::Choice },
+        { "tapeSpeed",  "Taśma: prędkość",        "Prędkość",     &Settings::tapeSpeed,  0, 1,     Kind::Choice },
+        { "trAttack",   "Atak (kształt transjentów)", "Atak",     &Settings::trAttack,  -1, 1,     Kind::Pan },
+        { "trSustain",  "Wybrzmienie (kształt transjentów)", "Wybrzmienie", &Settings::trSustain, -1, 1, Kind::Pan },
+        { "deEss",      "Odsyczanie",             "Odsyczanie",   &Settings::deEss,      0, 1,     Kind::Percent },
         { "cabAlign",   "Kolumny: wyrównanie fazy", "Wyrównaj fazę", &Settings::cabAlign, 0, 1,    Kind::Toggle },
 
         { "distComp",   "Źródło: kompresja",      "Kompresja",    &Settings::srcComp,    0, 1,     Kind::Percent },

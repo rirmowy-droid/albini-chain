@@ -20,10 +20,21 @@ public:
     void process (juce::dsp::AudioBlock<float>& block);
 
     void setAmount (float amount01) { amount.setTargetValue (juce::jlimit (0.0f, 1.0f, amount01)); }
+
+    /** 0 ogólna, 1 w stylu Studera A827, 2 w stylu MCI JH-24, 3 w stylu Ampexa MM1200. */
+    enum Model { Generic = 0, Studer, MCI, Ampex, NumModels };
+    void setModel (int m)         { model = juce::jlimit (0, (int) NumModels - 1, m); }
+    /** false = 30 cali/s, true = 15 cali/s (niższy i większy head bump, mniej góry, więcej nasycenia). */
+    void setSlowSpeed (bool slow) { slowSpeed = slow; }
     int getLatencyInSamples() const { return baseDelay; }
 
 private:
     void updateFilters (float a);
+
+    struct ModelDef { float bumpHz, bumpDb, bumpQ, dipHz, dipDb, hfLoss, drive0, driveA, asym, wowMs, flutterMs, flutterHz; };
+    static const ModelDef& def (int m);
+    int model = Generic, appliedModel = -1;
+    bool slowSpeed = false, appliedSlow = false;
 
     double sampleRate = 44100.0;
 

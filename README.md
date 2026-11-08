@@ -135,6 +135,14 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 - **Wyrównaj fazę A/B**: IR B jest przesuwany (do ±2 ms) i w razie potrzeby odwracany, żeby zgrał się z A – mniej „dziur” przy mieszaniu dwóch kolumn.
 - Nowe presety: *Brytyjski piec w Seattle*, *Prostownik, ciężko i zwarcie*, *Twin na krawędzi*, *Wstęgowy przy brzegu, ciemno*, *Bas: Piec SVT w piwnicy*. Stare presety brzmią jak wcześniej (piec *Albini*).
 
+## Magnetofon, atak/wybrzmienie, odsyczanie, własne presety
+
+- **Magnetofon** (studio, obok konsolety): *Ogólny 2"*, *w stylu Studera A827* (czysto, zwarty dół, otwarta góra), *w stylu MCI JH-24* (uderzenie i trochę brudu, parzyste harmoniczne), *w stylu Ampexa MM1200* (ciepło, miękka góra). **Prędkość**: 30 cali/s albo 15 cali/s (garb dołu niżej i mocniej, mniej góry, więcej nasycenia i chwiania).
+- **Atak / Wybrzmienie** (na źródle): kształtowanie transjentów niezależne od progu – np. bębny: więcej uderzenia pałki (do +10 dB na początku) albo krótszy/dłuższy ogon (±6 dB).
+- **Odsyczanie**: ścisza pasmo nad 4,5 kHz tylko przy głoskach syczących (w teście: „s” −10 dB, samogłoski bez zmian). Wokal ma je domyślnie na 30%.
+- **Własne presety**: w menu presetów *Zapisz obecne ustawienia jako preset…* – plik trafia do `Dokumenty\Stonoga x Albini\Presety` i pojawia się w sekcji *Moje presety* (we wszystkich projektach). *Otwórz folder z presetami* pokazuje ten folder.
+- Nowe presety: *Perkusja: Atak i zgnieciona sala na taśmie*, *Suma: Ciepła taśma 15 cali*.
+
 ## IR-y kabinetu
 
 - **Wbudowane IR-y** (Stonoga x Albini): 15 odpowiedzi 4x12 z głośnikami V30 z darmowej paczki Jesters Brutal Pack (CC0), pogrupowane na *ciemne / średnie / jasne*. Wybierasz je z listy przy slocie A i B, a blend miesza oba. Domyślnie gitara: A = średnia 2, B = ciemna 2. Szczegóły i licencja: `Resources/IR/LICENSE-IR.md`.

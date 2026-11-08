@@ -41,6 +41,10 @@ private:
     void drawPanel (juce::Graphics& g, const Panel& p);
     void drawMeter (juce::Graphics& g, juce::Rectangle<int> r, float db, float rangeDb, const juce::String& caption, juce::Colour c);
     void setPage (int page);
+    void rebuildPresetList();
+    void syncPresetBox();
+    void presetChosen (int id);
+    juce::Array<juce::File> userPresets;
 
     CombinedProcessor& proc;
     juce::LookAndFeel_V4 lnf;
@@ -48,6 +52,9 @@ private:
 
     // --- strona 1: tor ---
     juce::OwnedArray<Knob> cabKnobs;
+    juce::ComboBox tapeBox, tapeSpeedBox;
+    std::unique_ptr<ComboAtt> tapeAtt, tapeSpeedAtt;
+    juce::Label tapeLabel;
     juce::ComboBox ampModelBox, cabMicBox;
     std::unique_ptr<ComboAtt> ampModelAtt, cabMicAtt;
     juce::Label ampModelLabel, cabMicLabel;

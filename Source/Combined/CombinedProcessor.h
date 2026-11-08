@@ -35,6 +35,13 @@ public:
     const juce::String getProgramName (int index) override;
     void changeProgramName (int, const juce::String&) override {}
 
+    // --- własne presety (pliki w Dokumentach) -----------------------------
+    static juce::File getUserPresetFolder();
+    static juce::Array<juce::File> getUserPresetFiles();
+    bool saveUserPreset (const juce::String& name);
+    bool loadUserPreset (const juce::File& file);
+    juce::String getUserPresetName() const { return userPresetName; }
+
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
@@ -77,6 +84,7 @@ private:
     int maxBlockSize = 512;
     double preparedRate = 0.0;
     int currentProgram = 0;
+    juce::String userPresetName;
 
     std::array<std::atomic<float>*, sxa::kNumParams> params {};
     std::array<std::atomic<float>*, sxa::kNumPedal> pedalParams {};

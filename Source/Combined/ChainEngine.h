@@ -19,6 +19,8 @@
 #include "AlbumEq.h"
 #include "DeHarsh.h"
 #include "LookaheadLimiter.h"
+#include "TransientShaper.h"
+#include "DeEsser.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -55,6 +57,8 @@ public:
     float getBusReductionDb() const    { return busComp.getGainReductionDb(); }
     float getDeHarshDb() const         { return deHarsh.getReductionDb(); }
     float getLimiterDb() const         { return limiter.getReductionDb(); }
+    float getTransientDb() const       { return transient.getGainDb(); }
+    float getDeEssDb() const           { return deEsser.getReductionDb(); }
 
     // --- ciągłe dopasowanie barwy sumy: wolno uśredniane widmo (27 pasm) --------
     void getTrackedAlbumBandsDb (float* out) const;
@@ -104,6 +108,8 @@ private:
     AlbumEq album;
     DeHarsh deHarsh;
     LookaheadLimiter limiter;
+    TransientShaper transient;
+    DeEsser deEsser;
     stonoga::Biquad trackBp[AlbumEq::numBands];
     std::array<std::atomic<float>, AlbumEq::numBands> trackMs {};
     std::atomic<float> trackSeconds { 0.f };

@@ -35,6 +35,8 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, boo
     guard.prepare (sampleRate, nch);
     guard.ownLimiter = false;
     limiter.prepare (sampleRate, nch);
+    transient.prepare (sampleRate);
+    deEsser.prepare (sampleRate);
     duck.prepare (sampleRate);
     slap.prepare (sampleRate);
     album.prepare (sampleRate);
@@ -170,6 +172,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
 
     // --- barwa ------------------------------------------------------------------
     tone.process (block, s);
+    transient.process (block, s.trAttack, s.trSustain);
 
     // --- na źródle ----------------------------------------------------------------
     srcComp.setAmount (s.srcComp);
@@ -177,6 +180,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     srcComp.setManual (s.compMode > 0.5f, s.compThresh, s.compRatio, s.compAttack, s.compRelease,
                        s.compMakeup, s.compMix, s.compAllButtons > 0.5f);
     srcComp.process (block);
+    deEsser.process (block, s.deEss);
     chorus.set (s.chorus, s.chRate, s.chDepth);
     chorus.process (block);
     srcSpace.set (s.srcSmear, s.srcWidth, s.srcLoose, s.srcSize);
@@ -199,6 +203,8 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     console.setAmount (s.console);
     console.process (block);
     tape.setAmount (s.tape);
+    tape.setModel ((int) std::round (s.tapeModel));
+    tape.setSlowSpeed (s.tapeSpeed > 0.5f);
     tape.process (block);
 
     // --- na całości -----------------------------------------------------------------

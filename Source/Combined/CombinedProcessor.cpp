@@ -68,6 +68,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 else if (juce::String (def.id) == "consoleModel") ch = names (sxa::kConsoleNames, sxa::kNumConsoles);
                 else if (juce::String (def.id) == "ampModel") ch = names (sxa::kAmpNames, sxa::kNumAmps);
                 else if (juce::String (def.id) == "cabMic") ch = names (sxa::kCabMicNames, sxa::kNumCabMics);
+                else if (juce::String (def.id) == "tapeModel") ch = names (sxa::kTapeNames, sxa::kNumTapes);
+                else if (juce::String (def.id) == "tapeSpeed") ch = names (sxa::kTapeSpeedNames, 2);
                 else if (juce::String (def.id) == "cabA" || juce::String (def.id) == "cabB")
                 {
                     ch.add (pl ("Plik / wbudowana krzywa"));
@@ -207,6 +209,7 @@ void CombinedProcessor::setCurrentProgram (int index)
 {
     if (index < 0 || index >= sxa::kNumPresets) return;
     currentProgram = index;
+    userPresetName.clear();
     const auto& pr = sxa::kPresets[index];
     for (const auto& def : sxa::kPedal) setParam (def.id, pr.pedal.*(def.mem));
     const float keepStyle = paramValue ("style");
@@ -495,6 +498,68 @@ void CombinedProcessor::timerCallback()
             break;
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Własne presety
+// ---------------------------------------------------------------------------
+juce::File CombinedProcessor::getUserPresetFolder()
+{
+    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+               .getChildFile ("Stonoga x Albini").getChildFile ("Presety");
+}
+
+juce::Array<juce::File> CombinedProcessor::getUserPresetFiles()
+{
+    auto files = getUserPresetFolder().findChildFiles (juce::File::findFiles, false, "*.sxapreset");
+    std::sort (files.begin(), files.end(), [] (const juce::File& a, const juce::File& b)
+               { return a.getFileNameWithoutExtension().compareNatural (b.getFileNameWithoutExtension()) < 0; });
+    return files;
+}
+
+bool CombinedProcessor::saveUserPreset (const juce::String& name)
+{
+    const auto clean = juce::File::createLegalFileName (name.trim());
+    if (clean.isEmpty()) return false;
+    auto folder = getUserPresetFolder();
+    if (! folder.createDirectory()) return false;
+
+    juce::XmlElement xml ("StonogaAlbiniPreset");
+    xml.setAttribute ("version", 1);
+    xml.setAttribute ("name", name.trim());
+    auto addParam = [&] (const char* id)
+    {
+        auto* e = xml.createNewChildElement ("Param");
+        e->setAttribute ("id", id);
+        e->setAttribute ("value", (double) paramValue (id));
+    };
+    for (const auto& def : sxa::kPedal)  addParam (def.id);
+    for (const auto& def : sxa::kParams) if (juce::String (def.id) != "style") addParam (def.id);
+    for (int slot = 0; slot < 2; ++slot)
+        xml.setAttribute (irProperty (slot), apvts.state.getProperty (irProperty (slot)).toString());
+
+    const auto file = folder.getChildFile (clean + ".sxapreset");
+    if (! xml.writeTo (file)) return false;
+    userPresetName = file.getFileNameWithoutExtension();
+    return true;
+}
+
+bool CombinedProcessor::loadUserPreset (const juce::File& file)
+{
+    auto xml = juce::XmlDocument::parse (file);
+    if (xml == nullptr || ! xml->hasTagName ("StonogaAlbiniPreset")) return false;
+    for (auto* e : xml->getChildWithTagNameIterator ("Param"))
+    {
+        const auto id = e->getStringAttribute ("id");
+        if (id == "style") continue;
+        if (apvts.getParameter (id) != nullptr)
+            setParam (id.toRawUTF8(), (float) e->getDoubleAttribute ("value"));
+    }
+    for (int slot = 0; slot < 2; ++slot)
+        apvts.state.setProperty (irProperty (slot), xml->getStringAttribute (irProperty (slot).toString()), nullptr);
+    loadedCab = { -1, -1 };   // timer wczyta wybrane kolumny (wbudowane albo pliki)
+    userPresetName = file.getFileNameWithoutExtension();
+    return true;
 }
 
 // ---------------------------------------------------------------------------

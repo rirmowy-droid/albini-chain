@@ -75,9 +75,9 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     for (int i = 0; i < sxa::kNumStyles; ++i) styleBox.addItem (pl (sxa::kStyleNames[i]), i + 1);
     sourceAtt = std::make_unique<ComboAtt> (p.apvts, "source", sourceBox);
     styleAtt  = std::make_unique<ComboAtt> (p.apvts, "style", styleBox);
-    for (int i = 0; i < p.getNumPrograms(); ++i) presetBox.addItem (p.getProgramName (i), i + 1);
     presetBox.setTextWhenNothingSelected (pl ("Presety…"));
-    presetBox.onChange = [this] { const int id = presetBox.getSelectedId(); if (id > 0) proc.setCurrentProgram (id - 1); };
+    rebuildPresetList();
+    presetBox.onChange = [this] { presetChosen (presetBox.getSelectedId()); };
 
     autoMixButton.setColour (juce::TextButton::buttonColourId, flannel);
     autoMixButton.setColour (juce::TextButton::textColourOffId, paper);
@@ -113,6 +113,12 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     micAtt = std::make_unique<ComboAtt> (p.apvts, "mic", micBox);
     styleLabel (micLabel, pl ("Mikrofon"), tapeCol);
     micLabel.setJustificationType (juce::Justification::centredBottom);
+    for (int i = 0; i < sxa::kNumTapes; ++i) tapeBox.addItem (pl (sxa::kTapeNames[i]), i + 1);
+    for (int i = 0; i < 2; ++i) tapeSpeedBox.addItem (pl (sxa::kTapeSpeedNames[i]), i + 1);
+    tapeAtt = std::make_unique<ComboAtt> (p.apvts, "tapeModel", tapeBox);
+    tapeSpeedAtt = std::make_unique<ComboAtt> (p.apvts, "tapeSpeed", tapeSpeedBox);
+    styleLabel (tapeLabel, pl ("Magnetofon"), tapeCol);
+    tapeLabel.setJustificationType (juce::Justification::centredBottom);
     for (int i = 0; i < sxa::kNumConsoles; ++i) consoleBox.addItem (pl (sxa::kConsoleNames[i]), i + 1);
     consoleAtt = std::make_unique<ComboAtt> (p.apvts, "consoleModel", consoleBox);
     styleLabel (consoleLabel, pl ("Konsoleta"), tapeCol);
@@ -153,7 +159,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
         b->setColour (juce::ToggleButton::tickColourId, seal);
         b->setColour (juce::ToggleButton::tickDisabledColourId, ink.withAlpha (0.5f));
     }
-    for (const char* id : { "distComp", "chorus", "chrate", "chdepth", "distWidth", "distLoose", "distSmear", "distSize", "slap" })
+    for (const char* id : { "trAttack", "trSustain", "distComp", "deEss", "chorus", "chrate", "chdepth", "distWidth", "distLoose", "distSmear", "distSize", "slap" })
         addKnob (srcKnobs, id, pl (shortNameFor (id)), false);
     for (const char* id : { "roomMix", "roomSize", "roomPredelay", "roomCrush", "console", "tape", "tilt", "lowCut", "vocalSpace" })
         addKnob (studioKnobs, id, pl (shortNameFor (id)), false);
@@ -177,7 +183,8 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs })
         for (auto* k : *list) { page1.push_back (&k->slider); page1.push_back (&k->label); }
     for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch,
-                                                             &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton })
+                                                             &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton,
+                                                             &tapeBox, &tapeSpeedBox, &tapeLabel })
         page1.push_back (c);
     for (auto& s : irSlots) { page1.push_back (&s.load); page1.push_back (&s.clear); page1.push_back (&s.choose); }
 
@@ -355,8 +362,7 @@ void CombinedEditor::timerCallback()
     const auto st = proc.getAutoMixStatus();
     if (statusLabel.getText() != st) statusLabel.setText (st, juce::dontSendNotification);
 
-    const int cur = proc.getCurrentProgram() + 1;
-    if (presetBox.getSelectedId() != cur) presetBox.setSelectedId (cur, juce::dontSendNotification);
+    syncPresetBox();
 
     if (page == 1)
     {
@@ -477,6 +483,77 @@ void CombinedEditor::drawCurve (juce::Graphics& g)
     g.strokePath (path, juce::PathStrokeType (2.f));
 }
 
+// --- presety: wbudowane + własne pliki ---------------------------------------
+namespace { constexpr int kSaveId = 1900, kFolderId = 1901, kUserBase = 2000; }
+
+void CombinedEditor::rebuildPresetList()
+{
+    presetBox.clear (juce::dontSendNotification);
+    for (int i = 0; i < proc.getNumPrograms(); ++i) presetBox.addItem (proc.getProgramName (i), i + 1);
+    userPresets = CombinedProcessor::getUserPresetFiles();
+    if (! userPresets.isEmpty())
+    {
+        presetBox.addSeparator();
+        presetBox.addSectionHeading (pl ("Moje presety"));
+        for (int i = 0; i < userPresets.size(); ++i) presetBox.addItem (userPresets[i].getFileNameWithoutExtension(), kUserBase + i);
+    }
+    presetBox.addSeparator();
+    presetBox.addItem (pl ("Zapisz obecne ustawienia jako preset…"), kSaveId);
+    presetBox.addItem (pl ("Otwórz folder z presetami"), kFolderId);
+    syncPresetBox();
+}
+
+void CombinedEditor::syncPresetBox()
+{
+    int want = proc.getCurrentProgram() + 1;
+    const auto user = proc.getUserPresetName();
+    if (user.isNotEmpty())
+    {
+        want = 0;
+        for (int i = 0; i < userPresets.size(); ++i)
+            if (userPresets[i].getFileNameWithoutExtension() == user) want = kUserBase + i;
+    }
+    if (presetBox.getSelectedId() != want) presetBox.setSelectedId (want, juce::dontSendNotification);
+}
+
+void CombinedEditor::presetChosen (int id)
+{
+    if (id <= 0) return;
+    if (id <= proc.getNumPrograms()) { proc.setCurrentProgram (id - 1); return; }
+    if (id >= kUserBase && id - kUserBase < userPresets.size())
+    {
+        proc.loadUserPreset (userPresets[id - kUserBase]);
+        syncPresetBox();
+        return;
+    }
+    if (id == kFolderId)
+    {
+        auto folder = CombinedProcessor::getUserPresetFolder();
+        folder.createDirectory();
+        folder.startAsProcess();
+        syncPresetBox();
+        return;
+    }
+    if (id == kSaveId)
+    {
+        syncPresetBox();
+        auto* w = new juce::AlertWindow (pl ("Zapisz preset"), pl ("Nazwa presetu (zapisze się w Dokumentach, w folderze „Stonoga x Albini”):"),
+                                         juce::MessageBoxIconType::NoIcon, this);
+        w->addTextEditor ("name", proc.getUserPresetName(), {});
+        w->addButton (pl ("Zapisz"), 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton (pl ("Anuluj"), 0, juce::KeyPress (juce::KeyPress::escapeKey));
+        juce::Component::SafePointer<CombinedEditor> safe (this);
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([safe, w] (int result)
+        {
+            if (result != 1 || safe == nullptr) return;
+            const auto name = w->getTextEditorContents ("name");
+            if (safe->proc.saveUserPreset (name)) safe->rebuildPresetList();
+            else juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, pl ("Nie zapisano"),
+                                                         pl ("Nie udało się zapisać presetu. Sprawdź nazwę."));
+        }), true);
+    }
+}
+
 void CombinedEditor::layoutKnobs (juce::OwnedArray<Knob>& list, juce::Rectangle<int> area, int firstCellOffset)
 {
     area = area.withTrimmedTop (20);
@@ -566,10 +643,15 @@ void CombinedEditor::resized()
 
         studioPanel.bounds = a.removeFromTop (rowH1).reduced (3);
         auto sInner = studioPanel.bounds.reduced (8, 4);
-        const int scw = sInner.getWidth() / (studioKnobs.size() + 2);
+        const int scw = sInner.getWidth() / (studioKnobs.size() + 3);
         layoutCombo (micBox, micLabel, sInner.withWidth (scw));
         layoutCombo (consoleBox, consoleLabel, sInner.withWidth (scw).translated (scw, 0));
-        layoutKnobs (studioKnobs, sInner, 2);
+        {
+            auto tc = sInner.withWidth (scw).translated (scw * 2, 0);
+            layoutCombo (tapeBox, tapeLabel, tc);
+            tapeSpeedBox.setBounds (tc.reduced (4, 0).removeFromBottom (30).withSizeKeepingCentre (tc.getWidth() - 8, 24));
+        }
+        layoutKnobs (studioKnobs, sInner, 3);
         a.removeFromTop (6);
 
         auto r4 = a;
