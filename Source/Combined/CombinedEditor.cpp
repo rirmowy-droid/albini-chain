@@ -150,6 +150,11 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     hqButton.setButtonText (pl ("Jakość 8x"));
     hqButton.setTooltip (pl ("Kostka i piec liczone 8x zamiast 4x: gładsza góra przesteru, więcej pracy procesora"));
     hqAtt = std::make_unique<ButtonAtt> (p.apvts, "hq", hqButton);
+    dblButton.setButtonText (pl ("Prawdziwy dubel (2 podejścia)"));
+    dblButton.setTooltip (pl ("Gitara: prawy kanał to drugie, trochę inaczej zagrane podejście przepuszczone przez kostkę i piec. Panorama rozsuwa podejścia, Rozjazd ustala różnice."));
+    dblAtt = std::make_unique<ButtonAtt> (p.apvts, "trueDouble", dblButton);
+    dblButton.setColour (juce::ToggleButton::textColourId, juce::Colours::lightgrey);
+    dblButton.setColour (juce::ToggleButton::tickColourId, seal.brighter (0.3f));
     alignButton.setButtonText (pl ("Wyrównaj fazę A/B"));
     alignButton.setTooltip (pl ("Przesuwa IR B tak, żeby zgrał się w fazie z A (mniej dziur przy mieszaniu)"));
     alignAtt = std::make_unique<ButtonAtt> (p.apvts, "cabAlign", alignButton);
@@ -184,7 +189,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
         for (auto* k : *list) { page1.push_back (&k->slider); page1.push_back (&k->label); }
     for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch,
                                                              &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton,
-                                                             &tapeBox, &tapeSpeedBox, &tapeLabel })
+                                                             &tapeBox, &tapeSpeedBox, &tapeLabel, &dblButton })
         page1.push_back (c);
     for (auto& s : irSlots) { page1.push_back (&s.load); page1.push_back (&s.clear); page1.push_back (&s.choose); }
 
@@ -241,6 +246,9 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
         addKnob (glueKnobs, id, pl (shortNameFor (id)), false);
     addKnob (masterKnobs, "albumAmt", pl ("Barwa płyty"), false);
     addKnob (masterKnobs, "deHarsh", pl ("Wygładzanie góry"), false);
+    addKnob (masterKnobs, "msMonoBass", pl ("Mono dół"), false);
+    addKnob (masterKnobs, "msSideHigh", pl ("Góra boków"), false);
+    addKnob (masterKnobs, "msMidPresence", pl ("Środek 2,5k"), false);
     trackButton.setButtonText (pl ("Ciągłe dopasowanie"));
     trackAtt = std::make_unique<ButtonAtt> (p.apvts, "albumTrack", trackButton);
     styleLabel (masterInfo, pl ("Krzywa: aktualna korekta barwy płyty (27 pasm, 40 Hz – 16 kHz) dla stylu z nagłówka. „Ciągłe dopasowanie” – korektor stale śledzi miks. „Wygładzanie góry” ścisza tylko wyskakujące syczenie i ostre szczyty."),
@@ -332,6 +340,7 @@ void CombinedEditor::updateVisibility (bool force)
         footswitch.setVisible (pedal);
         for (auto* c : std::initializer_list<juce::Component*> { &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton })
             c->setVisible (pedal);
+        dblButton.setVisible (src == sxa::Guitar);
         for (auto& s : irSlots) { s.load.setEnabled (pedal); s.clear.setEnabled (pedal); s.choose.setEnabled (pedal); }
         noPedalLabel.setVisible (! pedal);
     }
@@ -638,6 +647,7 @@ void CombinedEditor::resized()
         a.removeFromTop (6);
 
         srcPanel.bounds = a.removeFromTop (rowH1).reduced (3);
+        dblButton.setBounds (srcPanel.bounds.reduced (8, 2).removeFromTop (22).removeFromRight (250));
         layoutKnobs (srcKnobs, srcPanel.bounds.reduced (8, 4));
         a.removeFromTop (6);
 
@@ -723,7 +733,7 @@ void CombinedEditor::resized()
             auto mp = masterEqPanel.bounds.reduced (8, 4);
             masterInfo.setBounds (mp.removeFromBottom (18).reduced (4, 0));
             harshMeter = mp.removeFromRight (60).reduced (8, 0).withTrimmedTop (16);
-            auto controls = mp.removeFromLeft (mp.getWidth() * 38 / 100);
+            auto controls = mp.removeFromLeft (mp.getWidth() * 52 / 100);
             curveArea = mp.withTrimmedTop (22).reduced (6, 2);
             auto toggleRow = controls.removeFromBottom (28);
             trackButton.setBounds (toggleRow.reduced (8, 0));

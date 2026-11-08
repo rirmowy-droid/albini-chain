@@ -143,6 +143,11 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 - **Własne presety**: w menu presetów *Zapisz obecne ustawienia jako preset…* – plik trafia do `Dokumenty\Stonoga x Albini\Presety` i pojawia się w sekcji *Moje presety* (we wszystkich projektach). *Otwórz folder z presetami* pokazuje ten folder.
 - Nowe presety: *Perkusja: Atak i zgnieciona sala na taśmie*, *Suma: Ciepła taśma 15 cali*.
 
+## Prawdziwy dubel i środek/boki sumy
+
+- **Prawdziwy dubel (2 podejścia)** – przełącznik w panelu „Na przesterze” (gitara). Prawy kanał dostaje drugie podejście *przed* kostką i piecem: inny rytm (do kilku ms, raz szybciej, raz wolniej), minimalne rozstrojenie, inna siła uderzenia. Przester z obu podejść jest więc różny, jak przy dwóch nagranych ścieżkach. *Panorama* rozsuwa podejścia, *Rozjazd* ustala, jak bardzo się różnią. Preset: *Gitara: Dwa podejścia, ściana*.
+- **Środek / boki** (strona 2, źródło „Cały miks”): *Mono dół* (boki bez dołu poniżej 20–250 Hz; 20 = wył., presety sumy: 80 Hz), *Góra boków* (±6 dB przy 5 kHz tylko na bokach), *Środek 2,5k* (±4 dB prezencji w środku – wokal i werbel do przodu/do tyłu).
+
 ## IR-y kabinetu
 
 - **Wbudowane IR-y** (Stonoga x Albini): 15 odpowiedzi 4x12 z głośnikami V30 z darmowej paczki Jesters Brutal Pack (CC0), pogrupowane na *ciemne / średnie / jasne*. Wybierasz je z listy przy slocie A i B, a blend miesza oba. Domyślnie gitara: A = średnia 2, B = ciemna 2. Szczegóły i licencja: `Resources/IR/LICENSE-IR.md`.

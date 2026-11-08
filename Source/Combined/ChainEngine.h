@@ -21,6 +21,8 @@
 #include "LookaheadLimiter.h"
 #include "TransientShaper.h"
 #include "DeEsser.h"
+#include "DoubleTake.h"
+#include "MidSide.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -110,6 +112,8 @@ private:
     LookaheadLimiter limiter;
     TransientShaper transient;
     DeEsser deEsser;
+    DoubleTake doubleTake;
+    MidSide midSide;
     stonoga::Biquad trackBp[AlbumEq::numBands];
     std::array<std::atomic<float>, AlbumEq::numBands> trackMs {};
     std::atomic<float> trackSeconds { 0.f };

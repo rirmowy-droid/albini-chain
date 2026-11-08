@@ -37,6 +37,8 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, boo
     limiter.prepare (sampleRate, nch);
     transient.prepare (sampleRate);
     deEsser.prepare (sampleRate);
+    doubleTake.prepare (sampleRate);
+    midSide.prepare (sampleRate);
     duck.prepare (sampleRate);
     slap.prepare (sampleRate);
     album.prepare (sampleRate);
@@ -102,6 +104,10 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     // nadajnik dla innych kopii: stopa z bębnów, obwiednia głosu z wokalu
     pubKick  = source == sxa::Drums  ? duck.analyseKick (block)  : 0.f;
     pubVocal = source == sxa::Vocals ? duck.analyseVocal (block) : 0.f;
+
+    // prawdziwy dubel: prawy kanał = drugie podejście, zanim zagra przez kostkę i piec
+    const bool trueDbl = s.trueDouble > 0.5f && source == sxa::Guitar && nCh >= 2;
+    if (trueDbl) doubleTake.process (block, s.srcLoose);
 
     // DI basu: czysty sygnał sprzed kostki i pieca (dół pod wzmacniaczem)
     const bool bass = source == sxa::Bass;
@@ -183,7 +189,23 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     deEsser.process (block, s.deEss);
     chorus.set (s.chorus, s.chRate, s.chDepth);
     chorus.process (block);
-    srcSpace.set (s.srcSmear, s.srcWidth, s.srcLoose, s.srcSize);
+    if (trueDbl)
+    {
+        // dwa podejścia już są w L i P: panorama = ile ich rozsunąć
+        if (nCh >= 2)
+        {
+            auto* l = block.getChannelPointer (0);
+            auto* r = block.getChannelPointer (1);
+            const float w = s.srcWidth;
+            for (size_t i = 0; i < n; ++i)
+            {
+                const float m = 0.5f * (l[i] + r[i]), sd = 0.5f * (l[i] - r[i]) * w;
+                l[i] = m + sd; r[i] = m - sd;
+            }
+        }
+        srcSpace.set (s.srcSmear, 0.f, s.srcLoose, s.srcSize);
+    }
+    else srcSpace.set (s.srcSmear, s.srcWidth, s.srcLoose, s.srcSize);
     srcSpace.process (block);
     slap.setAmount (s.slap);
     slap.process (block);
@@ -219,6 +241,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
 
     // --- barwa płyty (tylko na sumie) ----------------------------------------------
     if (source == sxa::Mix) album.process (block, s.albumAmt);
+    if (source == sxa::Mix) midSide.process (block, s.msMonoBass, s.msSideHigh, s.msMidPresence);
 
     // --- wygładzanie góry (dynamiczne dołki w 2,5-14 kHz) -------------------------
     deHarsh.process (block, s.deHarsh);

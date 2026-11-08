@@ -55,6 +55,8 @@ namespace sxa
         float cabMic = 0, micPos = 0.5f, micDist = 0.3f, cabAlign = 1;
         // magnetofon, atak/wybrzmienie, odsyczanie
         float tapeModel = 0, tapeSpeed = 0, trAttack = 0.f, trSustain = 0.f, deEss = 0.f;
+        // prawdziwy dubel gitary, środek/boki sumy
+        float trueDouble = 0, msMonoBass = 20.f, msSideHigh = 0.f, msMidPresence = 0.f;
         float eq0 = 0, eq1 = 0, eq2 = 0, eq3 = 0, eq4 = 0, eq5 = 0, eq6 = 0, eq7 = 0;
     };
 
@@ -127,6 +129,10 @@ namespace sxa
         { "trAttack",   "Atak (kształt transjentów)", "Atak",     &Settings::trAttack,  -1, 1,     Kind::Pan },
         { "trSustain",  "Wybrzmienie (kształt transjentów)", "Wybrzmienie", &Settings::trSustain, -1, 1, Kind::Pan },
         { "deEss",      "Odsyczanie",             "Odsyczanie",   &Settings::deEss,      0, 1,     Kind::Percent },
+        { "trueDouble", "Prawdziwy dubel (dwa podejścia przez przester)", "Prawdziwy dubel", &Settings::trueDouble, 0, 1, Kind::Toggle },
+        { "msMonoBass", "Suma: mono dół poniżej",  "Mono dół",    &Settings::msMonoBass, 20, 250,  Kind::Hertz },
+        { "msSideHigh", "Suma: góra boków",        "Góra boków",  &Settings::msSideHigh, -6, 6,    Kind::Decibel },
+        { "msMidPresence","Suma: prezencja środka", "Środek 2,5k", &Settings::msMidPresence, -4, 4, Kind::Decibel },
         { "cabAlign",   "Kolumny: wyrównanie fazy", "Wyrównaj fazę", &Settings::cabAlign, 0, 1,    Kind::Toggle },
 
         { "distComp",   "Źródło: kompresja",      "Kompresja",    &Settings::srcComp,    0, 1,     Kind::Percent },

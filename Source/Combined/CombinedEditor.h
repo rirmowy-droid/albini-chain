@@ -58,8 +58,8 @@ private:
     juce::ComboBox ampModelBox, cabMicBox;
     std::unique_ptr<ComboAtt> ampModelAtt, cabMicAtt;
     juce::Label ampModelLabel, cabMicLabel;
-    juce::ToggleButton hqButton, alignButton;
-    std::unique_ptr<ButtonAtt> hqAtt, alignAtt;
+    juce::ToggleButton hqButton, alignButton, dblButton;
+    std::unique_ptr<ButtonAtt> hqAtt, alignAtt, dblAtt;
     Panel cabPanel;
     juce::OwnedArray<Knob> pedalKnobs, ampKnobs, srcKnobs, studioKnobs, busKnobs, outKnobs;
     juce::ComboBox micBox, consoleBox;
