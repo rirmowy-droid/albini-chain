@@ -52,19 +52,21 @@ W stylach z krzywą kopia na sumie (źródło „Cały miks”) dopasowuje miks 
 1. mierzy miks w **26 pasmach co 1/3 oktawy** (40 Hz – 12,5 kHz), szerokość stereo i głośność, ustawia korektor „barwa płyty” (filtry dopasowane iteracyjnie, żeby nakładające się pasma dały dokładnie zadaną krzywą), panoramę M/S i głośność,
 2. słucha jeszcze raz po korekcie i dociąga resztę różnicy; głośność mierzy za limiterem.
 
-Gałka **Barwa płyty** (strona KOMPRESOR I MIKS) ustala siłę dopasowania. Na syntetycznym zespole odchylenie barwy od płyty spada z 3,3–4,5 dB do 1,0–1,6 dB, szerokość trafia z dokładnością do 0,4 dB, głośność do ~1 dB.
+Gałka **Barwa płyty** (strona KOMPRESOR I MIKS) ustala siłę dopasowania. Na syntetycznym zespole odchylenie barwy od płyty spada z 3,3–4,6 dB do 0,6–1,6 dB, szerokość trafia z dokładnością do 0,4 dB, głośność do ~1 dB.
 
 Krzywe zmierzone z pełnych plików stereo:
 
 | styl | płyta (utwory) | strona/środek | głośność K |
 |---|---|---|---|
+| Seattle '91 | Nevermind (Smells Like Teen Spirit, ze składanki z 2002 r.) | −7,4 dB | −14,5 dB |
 | Chicago bez litości | In Utero (Scentless Apprentice, Milk It) | −5,2 dB | −12,6 dB |
+| Ciepła sala | Ten (Alive, ze składanki) | −8,4 dB | −14,3 dB |
 | Smoła | Dirt (Sickman, Down in a Hole) | −8,8 dB | −11,6 dB |
 | Czarne słońce | Black Hole Sun (master ze składanki z 2023 r.) | −6,6 dB | −10,4 dB |
 | Łazienka w Bostonie | Surfer Rosa (Where Is My Mind?) | −5,2 dB | −19,9 dB |
 | Debiut '90 | Facelift (Love, Hate, Love) | −6,2 dB | −14,9 dB |
 
-Seattle '91 i Ciepła sala nie mają jeszcze krzywych (brak plików z Nevermind i Ten). Konsolety w stylach Łazienka i Debiut '90 dobrane są do brzmienia, nie z dokumentacji sesji.
+Konsolety w stylach Łazienka i Debiut '90 dobrane są do brzmienia, nie z dokumentacji sesji.
 
 ### Auto-miks
 Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę (źródło „Cały miks”). Wybierz styl i kliknij **AUTO-MIKS** w dowolnej kopii, a potem zagraj ~6 s utworu:

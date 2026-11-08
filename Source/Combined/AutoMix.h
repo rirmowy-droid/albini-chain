@@ -324,16 +324,18 @@ namespace sxa
     /** Brzmienie płyt zmierzone z pełnych plików stereo (tym samym miernikiem co wtyczka):
         barwa w 26 pasmach co 1/3 oktawy (40 Hz - 12,5 kHz, dB względem średniej 60 Hz - 8 kHz),
         szerokość stereo (strona względem środka) i głośność (średnia K).
+          Seattle '91:        Nevermind - Smells Like Teen Spirit (ze składanki z 2002 r.)
           Chicago:            In Utero - Scentless Apprentice, Milk It
+          Ciepła sala:        Ten - Alive (ze składanki)
           Smoła:              Dirt - Sickman, Down in a Hole
           Czarne słońce:      Black Hole Sun (master ze składanki z 2023 r.)
           Łazienka w Bostonie: Surfer Rosa - Where Is My Mind?
           Debiut '90:         Facelift - Love, Hate, Love */
     struct AlbumCurve { bool has; float db[26]; float sideToMidDb; float loudDb; const char* name; };
     inline const AlbumCurve kAlbumCurves[kNumStyles] = {
-        { false, {}, 0.f, 0.f, "" },
+        { true, { -3.6f, -0.9f, 2.4f, 3.6f, 4.2f, 3.8f, 2.1f, 2.4f, -0.5f, -2.3f, -2.8f, -2.3f, -1.8f, -0.8f, -1.1f, -0.3f, 1.9f, 1.6f, 1.8f, 0.6f, 0.2f, -1.5f, -4.2f, -6.8f, -10.0f, -13.1f }, -7.4f, -14.5f, "Nevermind" },
         { true, { -4.3f, -0.6f, 3.5f, 6.2f, 7.4f, 7.1f, 5.3f, 2.5f, -0.3f, -2.1f, -3.0f, -3.0f, -1.9f, -1.1f, -1.2f, -1.4f, 0.1f, 1.4f, 0.9f, -1.0f, -2.4f, -4.4f, -5.5f, -7.0f, -9.8f, -14.4f }, -5.2f, -12.6f, "In Utero" },
-        { false, {}, 0.f, 0.f, "" },
+        { true, { -0.9f, 3.5f, 2.4f, 0.9f, -0.4f, -0.3f, 0.6f, 1.5f, 1.6f, -0.1f, 0.3f, 2.6f, 4.0f, 2.6f, 1.4f, 1.3f, 1.3f, 0.7f, 0.7f, -1.1f, -2.9f, -4.3f, -5.8f, -7.1f, -8.5f, -13.2f }, -8.4f, -14.3f, "Ten" },
         { true, { -5.9f, -2.2f, 1.9f, 2.9f, 1.8f, 1.4f, 1.4f, 1.2f, 1.2f, 1.8f, 0.9f, 1.1f, 2.0f, 1.6f, 1.2f, 1.1f, 1.6f, 1.1f, -0.3f, -1.6f, -2.4f, -5.0f, -6.7f, -8.2f, -11.0f, -14.5f }, -8.8f, -11.6f, "Dirt" },
         { true, { -4.9f, -0.3f, 2.8f, 2.9f, 4.4f, 4.0f, 2.2f, 2.4f, 1.4f, -0.2f, 0.0f, 0.2f, 0.8f, 0.6f, 0.2f, -1.0f, -1.5f, -1.0f, -0.3f, -1.6f, -2.8f, -4.2f, -3.7f, -5.7f, -9.7f, -15.0f }, -6.6f, -10.4f, "Black Hole Sun" },
         { true, { -3.5f, 1.1f, 2.3f, 1.6f, 3.7f, 4.0f, 3.3f, 3.7f, 2.0f, 2.6f, -0.2f, -0.2f, 4.0f, 0.5f, -0.8f, -1.0f, -1.1f, -0.4f, -1.5f, -1.8f, -2.7f, -4.6f, -6.0f, -7.4f, -8.9f, -11.7f }, -5.2f, -19.9f, "Surfer Rosa" },
