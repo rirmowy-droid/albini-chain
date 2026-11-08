@@ -107,6 +107,7 @@ void AmpStage::updateModelFilters()
 {
     if (appliedModel == model) return;
     appliedModel = model;
+    cachedDrive = -1.f;
     lastShelfDrive = -1.f;
 
     const auto& d = def (model);
@@ -151,12 +152,18 @@ void AmpStage::processModelled (juce::dsp::AudioBlock<float>& up)
     float* ch[maxCh] {};
     for (int c = 0; c < nCh; ++c) ch[c] = up.getChannelPointer ((size_t) c);
 
+    // wzmocnienia zależne od drive liczone tylko, gdy gałka się rusza
+    float gs = cachedGs, comp = cachedComp;
     for (size_t i = 0; i < nUp; ++i)
     {
-        const float drive = driveSmoothed.getNextValue();
-        const float gTotal = juce::Decibels::decibelsToGain (drive * d.maxDb);
-        const float gs = std::pow (gTotal, stageExp);
-        const float comp = 1.f / std::sqrt (gTotal);
+        if (driveSmoothed.isSmoothing() || cachedDrive < 0.f)
+        {
+            const float drive = driveSmoothed.getNextValue();
+            const float gTotal = juce::Decibels::decibelsToGain (drive * d.maxDb);
+            gs = std::pow (gTotal, stageExp);
+            comp = 1.f / std::sqrt (gTotal);
+            cachedDrive = drive; cachedGs = gs; cachedComp = comp;
+        }
 
         // zasilanie: obwiednia sygnału na końcówce, wspólna dla kanałów
         const float supply = 1.f - 0.45f * sag * juce::jmin (1.f, sagEnv);
@@ -168,7 +175,7 @@ void AmpStage::processModelled (juce::dsp::AudioBlock<float>& up)
             for (int s = 0; s < d.stages; ++s)
             {
                 // odwracające stopnie: asymetria na zmianę
-                x = (s & 1) ? std::tanh (x * gs + bOdd) - tbOdd : std::tanh (x * gs + d.bias) - tb;
+                x = (s & 1) ? fastTanh (x * gs + bOdd) - tbOdd : fastTanh (x * gs + d.bias) - tb;
                 x = interLp[c][s].process (interHp[c][s].process (x));
             }
             x *= comp * (float) d.stages;
@@ -177,7 +184,7 @@ void AmpStage::processModelled (juce::dsp::AudioBlock<float>& up)
             // końcówka mocy przeciwsobna: symetryczne, miękkie obcinanie do napięcia zasilania
             const float drivePow = x * pg;
             peak = juce::jmax (peak, std::abs (drivePow) * 0.5f);
-            const float y = supply * std::tanh (drivePow / supply);
+            const float y = supply * fastTanh (drivePow / supply);
             ch[c][i] = y * pgComp * trim;
         }
 
@@ -221,22 +228,36 @@ void AmpStage::process (juce::dsp::AudioBlock<float>& block)
 
     if (model == Albini)
     {
-        for (size_t i = 0; i < nUp; ++i)
+        if (driveSmoothed.isSmoothing())
         {
-            const float drive = driveSmoothed.getNextValue();
-            const float g     = juce::Decibels::decibelsToGain (drive * maxDriveDb);
-            gainRamp[i] = g;
-            biasRamp[i] = 0.1f + 0.2f * drive;          // asymetria -> parzyste harmoniczne
-            compRamp[i] = 1.0f / std::sqrt (g);         // przybliżona kompensacja poziomu
-        }
-
-        for (size_t ch = 0; ch < up.getNumChannels(); ++ch)
-        {
-            auto* d = up.getChannelPointer (ch);
             for (size_t i = 0; i < nUp; ++i)
             {
-                const float b = biasRamp[i];
-                d[i] = (std::tanh (d[i] * gainRamp[i] + b) - std::tanh (b)) * compRamp[i];
+                const float drive = driveSmoothed.getNextValue();
+                const float g     = juce::Decibels::decibelsToGain (drive * maxDriveDb);
+                gainRamp[i] = g;
+                biasRamp[i] = 0.1f + 0.2f * drive;          // asymetria -> parzyste harmoniczne
+                compRamp[i] = 1.0f / std::sqrt (g);         // przybliżona kompensacja poziomu
+            }
+            for (size_t ch = 0; ch < up.getNumChannels(); ++ch)
+            {
+                auto* d = up.getChannelPointer (ch);
+                for (size_t i = 0; i < nUp; ++i)
+                {
+                    const float b = biasRamp[i];
+                    d[i] = (fastTanh (d[i] * gainRamp[i] + b) - fastTanh (b)) * compRamp[i];
+                }
+            }
+        }
+        else
+        {
+            // gałka stoi: stałe wzmocnienie, bez exp/sqrt na każdą próbkę
+            const float drive = driveSmoothed.getCurrentValue();
+            const float g = juce::Decibels::decibelsToGain (drive * maxDriveDb);
+            const float b = 0.1f + 0.2f * drive, tb = fastTanh (b), c = 1.0f / std::sqrt (g);
+            for (size_t ch = 0; ch < up.getNumChannels(); ++ch)
+            {
+                auto* d = up.getChannelPointer (ch);
+                for (size_t i = 0; i < nUp; ++i) d[i] = (fastTanh (d[i] * g + b) - tb) * c;
             }
         }
     }

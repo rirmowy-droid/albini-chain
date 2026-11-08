@@ -40,6 +40,8 @@ public:
         sideHp.highpass (sr, 150.f, 0.7f);
         damp = 1.f - std::exp (-2.f * stonoga::kPi * 5200.f / sr);
         smear.reset (sampleRate, 0.1);
+        driftK = 1.f / (1.2f * sr);
+        curDelay = 14.f * 0.001f * sr;
         width.reset (sampleRate, 0.1);
         lastSize = -1.f;
         reset();
@@ -85,14 +87,17 @@ public:
 
             if (mode == Mode::DoubleTrack && w > 0.0001f)
             {
-                if ((counter++ % 3000) == 0) driftT = random.nextFloat() * 2.f - 1.f;
-                drift += (driftT - drift) * (0.00008f + 0.0004f * loose);
+                // nowy cel co ~1,5 s, wolne dojście - rytm „pływa”, ale strój nie
+                if ((counter++ % (unsigned) (1.5f * sr)) == 0) driftT = random.nextFloat() * 2.f - 1.f;
+                drift += (driftT - drift) * driftK;
                 lfo += 2.f * stonoga::kPi * 0.17f / sr; if (lfo > 2.f * stonoga::kPi) lfo -= 2.f * stonoga::kPi;
 
                 // drugie podejście: 12-20 ms później, pływa w czasie, trochę ciemniejsze
-                const float dMs = 12.f + 4.f * loose + loose * (6.f * drift + 1.2f * std::sin (lfo));
+                const float target = (12.f + 4.f * loose + loose * (6.f * drift + 1.2f * std::sin (lfo))) * msS;
+                // ograniczenie prędkości zmiany opóźnienia: maks. ok. 3 centy odstrojenia
+                curDelay += juce::jlimit (-maxSlope, maxSlope, target - curDelay);
                 dbl[0].push (l); dbl[1].push (r);
-                float takeB = dbl[1].tap (dMs * msS);
+                float takeB = dbl[1].tap (curDelay);
                 tone[1] += toneC * (takeB - tone[1]);
                 takeB = tone[1];
 
@@ -145,6 +150,8 @@ private:
     float apLen[2][4] {}, tone[2] {};
     stonoga::Biquad hp[2], sideHp;
     stonoga::Reverb rv[2];
+    static constexpr float maxSlope = 0.0017f;   // próbek opóźnienia na próbkę (~3 centy)
+    float driftK = 0.f, curDelay = 600.f;
     float drift = 0, driftT = 0, loose = 0.3f, size = 0.45f, lastSize = -1.f;
     unsigned counter = 0;
     juce::Random random { 0x5EAD };

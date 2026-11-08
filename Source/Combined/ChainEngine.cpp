@@ -1,3 +1,4 @@
+#include <cstring>
 #include "ChainEngine.h"
 
 void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, bool highQuality)
@@ -110,15 +111,21 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     const bool trueDbl = s.trueDouble > 0.5f && source == sxa::Guitar && nCh >= 2;
     if (trueDbl) doubleTake.process (block, s.srcLoose);
 
+    // gitara/bas nagrane w mono (L = P): kostka, piec i kolumna liczone raz, potem kopia na P
+    const bool monoIn = pedalSource && ! trueDbl && nCh >= 2
+                     && std::memcmp (block.getChannelPointer (0), block.getChannelPointer (1), n * sizeof (float)) == 0;
+    auto work = monoIn ? block.getSubsetChannelBlock (0, 1) : block;
+    const size_t wCh = monoIn ? 1 : nCh;
+
     // DI basu: czysty sygnał sprzed kostki i pieca (dół pod wzmacniaczem)
     const bool bass = source == sxa::Bass;
     if (bass)
-        for (size_t c = 0; c < nCh; ++c)
-            juce::FloatVectorOperations::copy (diBuf.getWritePointer ((int) c), block.getChannelPointer (c), (int) n);
+        for (size_t c = 0; c < wCh; ++c)
+            juce::FloatVectorOperations::copy (diBuf.getWritePointer ((int) c), work.getChannelPointer (c), (int) n);
 
     // --- kostka (zawsze przez oversampling: stałe opóźnienie) ----------------
     {
-        auto up = pedalOS->processSamplesUp (block);
+        auto up = pedalOS->processSamplesUp (work);
         const auto nUp = up.getNumSamples();
         // oszczędzanie: wyłączona kostka po ~3 s (gdy ogony wybrzmiały) przestaje liczyć
         pedalMix.setTargetValue (s.pedalOn > 0.5f ? 1.f : 0.f);
@@ -127,11 +134,11 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         if (pedalSource && pedalIdleSeconds < 3.0)
         {
             stonoga::Params p = pedalIn;
-            for (size_t c = 0; c < nCh; ++c)
+            for (size_t c = 0; c < wCh; ++c)
                 juce::FloatVectorOperations::copy (osDry.getWritePointer ((int) c), up.getChannelPointer (c), (int) nUp);
 
             std::array<float*, 8> ptrs {};
-            const int engCh = (int) juce::jmin (nCh, ptrs.size());
+            const int engCh = (int) juce::jmin (wCh, ptrs.size());
             for (int c = 0; c < engCh; ++c) ptrs[(size_t) c] = up.getChannelPointer ((size_t) c);
             pedal.process (ptrs.data(), engCh, (int) nUp, p);
 
@@ -139,7 +146,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
                 for (size_t i = 0; i < nUp; ++i)
                 {
                     const float m = pedalMix.getNextValue();
-                    for (size_t c = 0; c < nCh; ++c)
+                    for (size_t c = 0; c < wCh; ++c)
                     {
                         auto* w = up.getChannelPointer (c);
                         const float dry = osDry.getSample ((int) c, (int) i);
@@ -147,7 +154,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
                     }
                 }
         }
-        pedalOS->processSamplesDown (block);
+        pedalOS->processSamplesDown (work);
     }
 
     // --- wzmacniacz i kolumna -------------------------------------------------
@@ -158,27 +165,29 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     amp.setPresence (s.ampPresence);
     amp.setResonance (s.ampResonance);
     amp.setSag (s.ampSag);
-    amp.process (block);
+    amp.process (work);
 
     if (pedalSource)
     {
         cab.setBassVoicing (bass);
         cab.setBlend (s.cabBlend);
         cab.setMic ((int) std::round (s.cabMic), s.micPos, s.micDist);
-        cab.process (block);
+        cab.process (work);
     }
 
     // DI / piec: 0,5 = jak dotąd (0,8 piec + 0,9 czystego dołu z linii)
     const float ampG = 0.8f * std::min (1.f, 2.f * (1.f - s.baDi));
     const float diG  = 0.9f * std::min (1.f, 2.f * s.baDi);
     if (bass)   // DI: czysty dół pod wzmacniaczem, jak przy nagraniu basu z linii + pieca
-        for (size_t c = 0; c < nCh && c < diLp.size(); ++c)
+        for (size_t c = 0; c < wCh && c < diLp.size(); ++c)
         {
-            auto* d = block.getChannelPointer (c);
+            auto* d = work.getChannelPointer (c);
             const auto* di = diBuf.getReadPointer ((int) c);
             for (size_t i = 0; i < n; ++i)
                 d[i] = ampG * d[i] + diG * diLp[c].process (di[i]);
         }
+
+    if (monoIn) juce::FloatVectorOperations::copy (block.getChannelPointer (1), block.getChannelPointer (0), (int) n);
 
     // --- barwa ------------------------------------------------------------------
     tone.process (block, s);

@@ -615,7 +615,7 @@ bool CombinedProcessor::loadBundledIR (int slot, int index)
         {
             int size = 0;
             const char* data = BinaryData::getNamedResource (BinaryData::namedResourceList[i], size);
-            return engine.cabinet().loadIRFromMemory (slot, data, (size_t) size);
+            return engine.cabinet().loadIRFromMemory (slot, data, (size_t) size, 0.1);
         }
    #else
     juce::ignoreUnused (slot, index);

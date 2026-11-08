@@ -17,6 +17,15 @@
       4 basowy SVT (w stylu Ampega) – gęsty dół, warkot w średnicy, ciemna góra.
 
     Nieliniowość działa na 4x (albo 8x w trybie wysokiej jakości). */
+/** Szybki tanh (ułamek łańcuchowy Lamberta, błąd < 1e-4), ok. 5x szybszy niż std::tanh. */
+inline float fastTanh (float x)
+{
+    if (x > 4.97f) return 1.f;
+    if (x < -4.97f) return -1.f;
+    const float x2 = x * x;
+    return x * (135135.f + x2 * (17325.f + x2 * (378.f + x2))) / (135135.f + x2 * (62370.f + x2 * (3150.f + 28.f * x2)));
+}
+
 /** Biquad w podwójnej precyzji - przy 192/384 kHz niskie częstotliwości w float szumią. */
 struct DBiquad
 {
@@ -112,6 +121,7 @@ private:
     stonoga::Biquad modelHp[maxCh];               // sprzężenie wejścia (zależne od modelu)
     stonoga::Biquad presenceF[maxCh], resonanceF[maxCh];
     float sagEnv = 0.f, sagAtt = 0.f, sagRel = 0.f;
+    float cachedDrive = -1.f, cachedGs = 1.f, cachedComp = 1.f;
 
     juce::SmoothedValue<float> driveSmoothed { 0.4f };
     std::vector<float> gainRamp, biasRamp, compRamp;

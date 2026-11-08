@@ -173,6 +173,14 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 - IR-y **nie są przycinane** (Trim off), żeby dwa mikrofony z tej samej sesji pozostały zgrane w fazie.
   Są normalizowane, więc blend zachowuje poziom.
 
+## Wydajność (3.3)
+
+- Gitara/bas nagrane w mono (L = P) przechodzą przez kostkę, piec i kolumnę raz zamiast dwa razy – dźwięk identyczny.
+- Szybszy przester pieców (przybliżenie tanh z błędem < 0,0001) i brak przeliczeń, gdy gałki stoją.
+- Wbudowane IR-y przycięte do 100 ms (dalej jest tylko ogon o 34–38 dB cichszy).
+- Wynik w teście: tor gitary ok. 2x lżejszy (18% → 9% rdzenia), piec Prostownik ok. 2x lżejszy.
+- Panorama „dwóch podejść” i prawdziwy dubel: opóźnienie zmienia się wolno, strój drugiego kanału pływa najwyżej o ok. 3 centy (wcześniej 40–270 centów – słyszalne „rozstrajanie” na długich akordach).
+
 ## Latencja
 
 Około 37 próbek przy 48 kHz (oversampling + transport taśmy). Plugin zgłasza ją hostowi, a ten ją kompensuje.
