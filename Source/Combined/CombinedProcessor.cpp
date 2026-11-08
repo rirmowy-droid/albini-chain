@@ -375,7 +375,8 @@ void CombinedProcessor::timerCallback()
                     if (sxa::computeAlbumMatch (amStyle, bands, eq))
                     {
                         for (int b = 0; b < sxa::kNumEqBands; ++b) setParam (sxa::kParams[eqParamIndex (b)].id, eq[b]);
-                        matchText = pl (", barwa jak ") + pl (sxa::kAlbumCurves[amStyle].name);
+                        setParam ("width", sxa::computeAlbumWidth (amStyle, engine.getMeasuredSideToMidDb(), paramValue ("width")));
+                        matchText = pl (", barwa i szerokość jak ") + pl (sxa::kAlbumCurves[amStyle].name);
                     }
                 }
                 const int tracks = ctx.guitars + ctx.basses + ctx.vocals + reg.countSource (sxa::Drums);

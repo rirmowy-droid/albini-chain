@@ -166,11 +166,11 @@ namespace sxa
             { 0.00f, 0.30f, 0.0f, 0.30f, 0.35f, 0.00f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.30f, 0.35f,0.15f, MicNone,    -0.10f,  25,  0.0f, -14.0f },
         },
         { // Smoła - ciemno, ciężko, podwójne głosy
-            { 0.15f, 0.45f, 0.0f, 0.30f, 0.45f, 0.50f,  0.35f,0.2f, 0.6f, 0.85f, 0.40f, 0.30f, 0.55f,  0.25f, 0.0f, 0.0f, MicNone,     -0.35f,  90, -2.0f,  -4.5f },
+            { 0.15f, 0.45f, 0.0f, 0.30f, 0.45f, 0.50f,  0.30f,0.2f, 0.5f, 0.45f, 0.40f, 0.30f, 0.55f,  0.25f, 0.0f, 0.0f, MicNone,     -0.35f,  90, -2.0f,  -4.5f },
             { 0.05f, 0.40f, 0.0f, 0.35f, 0.50f, 0.50f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.25f, 0.0f, 0.0f, MicNone,     -0.30f,  30,  0.0f,  -2.0f },
             { 0.30f, 0.50f, 0.5f, 0.30f, 0.45f, 0.40f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.15f, 0.45f,  0.25f, 0.0f, 0.0f, MicCondenser,-0.30f,  25,  0.0f,   0.0f },
-            { 0.15f, 0.45f, 0.0f, 0.30f, 0.40f, 0.60f,  0.25f,0.25f,0.3f, 0.70f, 0.50f, 0.35f, 0.50f,  0.25f, 0.0f, 0.0f, MicRibbon,   -0.10f,  90,  0.0f,   0.5f },
-            { 0.00f, 0.30f, 0.0f, 0.30f, 0.45f, 0.00f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.35f, 0.35f,0.10f, MicNone,    -0.25f,  25,  0.0f, -14.0f },
+            { 0.15f, 0.45f, 0.0f, 0.30f, 0.40f, 0.60f,  0.20f,0.25f,0.3f, 0.40f, 0.50f, 0.35f, 0.50f,  0.25f, 0.0f, 0.0f, MicRibbon,   -0.10f,  90,  0.0f,   0.5f },
+            { 0.00f, 0.30f, 0.0f, 0.30f, 0.45f, 0.00f,  0.0f, 0.3f, 0.4f, 0.00f, 0.00f, 0.00f, 0.30f,  0.35f, 0.15f,0.10f, MicNone,    -0.25f,  25,  0.0f, -14.0f },
         },
         { // Czarne słońce - gęsto i szeroko
             { 0.15f, 0.45f, 0.0f, 0.35f, 0.40f, 0.55f,  0.1f, 0.3f, 0.4f, 1.00f, 0.35f, 0.25f, 0.50f,  0.25f, 0.0f, 0.0f, MicNone,     -0.15f,  80, -2.5f,  -4.0f },
@@ -241,7 +241,7 @@ namespace sxa
             {
                 // kilka gitar: każda węższa, rozstawione na boki (jak dwa nagrania)
                 s.srcWidth = std::min (s.srcWidth, 0.35f);
-                const float hard = style == 1 ? 1.0f : 0.8f;
+                const float hard = style == 1 ? 1.0f : (style == 3 ? 0.6f : 0.8f);   // In Utero bardzo szeroko, Dirt węziej (pomiar płyt)
                 static const float order[] = { -1.f, 1.f, 0.f, -0.5f, 0.5f, -0.75f, 0.75f };
                 const int k = std::min (ctx.guitarIndex, 6);
                 s.pan = order[k] * (k < 2 ? hard : 1.f);
@@ -312,19 +312,32 @@ namespace sxa
         }
     }
 
-    /** Krzywe barwy płyt (8 pasm, dB względem średniej), zmierzone z nagrań referencyjnych
-        tym samym miernikiem, którego używa wtyczka. Źródło: nagrania z YouTube (mono,
-        skompresowane), więc tylko ogólny kształt 60 Hz - 8 kHz.
-          Chicago: In Utero (Very Ape, Scentless Apprentice - miksy Albiniego)
-          Smoła:   Alice in Chains (Down in a Hole, Sickman, Love Hate Love) */
-    struct AlbumCurve { bool has; float db[kNumEqBands]; const char* name; };
+    /** Krzywe barwy płyt (8 pasm, dB względem średniej) i szerokość stereo (strona względem
+        środka, dB), zmierzone z pełnych plików stereo tym samym miernikiem, którego używa wtyczka.
+          Chicago: In Utero (Scentless Apprentice, Milk It - miksy Albiniego)
+          Smoła:   Dirt (Sickman, Down in a Hole) */
+    struct AlbumCurve { bool has; float db[kNumEqBands]; float sideToMidDb; const char* name; };
     inline const AlbumCurve kAlbumCurves[kNumStyles] = {
-        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, "" },
-        { true,  { 4.69f, 7.40f, 2.24f, -1.29f, -2.51f, 0.09f, -2.40f, -8.24f }, "In Utero" },
-        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, "" },
-        { true,  { 1.97f, 3.41f, 3.01f, 2.39f, 0.48f, -0.78f, -3.08f, -7.41f }, "Alice in Chains" },
-        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, "" },
+        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, 0.f, "" },
+        { true,  { 3.37f, 6.05f, 1.55f, -1.62f, -1.03f, 0.31f, -2.17f, -6.45f }, -5.2f, "In Utero" },
+        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, 0.f, "" },
+        { true,  { 0.96f, 1.83f, 1.68f, 1.73f, 1.68f, 1.04f, -1.99f, -6.93f }, -8.8f, "Dirt" },
+        { false, { 0, 0, 0, 0, 0, 0, 0, 0 }, 0.f, "" },
     };
+
+    /** Panorama sumy (tryb poszerzania M/S, tylko powyżej ~150 Hz) tak, żeby strona względem
+        środka zbliżyła się do płyty. Poszerzać umiemy, zwężać nie: zbyt szeroki miks -> 0. */
+    inline float computeAlbumWidth (int style, float measuredSideToMidDb, float currentWidth)
+    {
+        const auto& c = kAlbumCurves[style];
+        if (! c.has) return currentWidth;
+        const float needDb = c.sideToMidDb - measuredSideToMidDb;          // o ile podnieść stronę
+        if (std::abs (needDb) < 1.f) return currentWidth;                  // wystarczająco blisko - nie ruszamy
+        // obecna panorama już podnosi stronę o ~20*log10(1 + 1.2*w) (dla pasma > 150 Hz)
+        const float haveDb = 20.f * std::log10 (1.f + 1.2f * currentWidth);
+        const float totalDb = std::max (0.f, haveDb + needDb);
+        return std::max (0.f, std::min (1.f, (std::pow (10.f, totalDb / 20.f) - 1.f) / 1.2f));
+    }
 
     /** Korekta sumy w stronę krzywej płyty: 60% różnicy, najwyżej +-4 dB na pasmo.
         Średnia korekty = 0, więc głośność całości się nie zmienia. */

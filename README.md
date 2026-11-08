@@ -47,15 +47,15 @@ Na czym oparte są style (to inspiracja, nie kopia brzmienia płyt):
 - *Smoła* – Dirt (Dave Jerden): kilka pieców mieszanych pasmami, trzy U87 jako mikrofony sali, phaser i delay na gitarach, analogowa taśma.
 - *Czarne słońce* – Superunknown (Bad Animals, preampy Neve, taśma Studer).
 
-### Barwa płyty (auto-miks na sumie)
-W stylach **Chicago** i **Smoła** kopia na sumie mierzy miks w 8 pasmach i koryguje go w stronę krzywej zmierzonej z nagrań referencyjnych (60% różnicy, maks. ±4 dB, bez zmiany głośności):
+### Barwa i szerokość płyty (auto-miks na sumie)
+W stylach **Chicago** i **Smoła** kopia na sumie mierzy miks i zbliża go do płyty: barwę w 8 pasmach (60% różnicy, maks. ±4 dB, bez zmiany głośności) i szerokość stereo (panorama M/S powyżej 150 Hz). Krzywe zmierzone z pełnych plików stereo tym samym miernikiem, którego używa wtyczka:
 
-| pasmo | 60 | 125 | 250 | 500 | 1k | 2k | 4k | 8k |
-|---|---|---|---|---|---|---|---|---|
-| In Utero (Very Ape, Scentless Apprentice) | +4,7 | +7,4 | +2,2 | −1,3 | −2,5 | +0,1 | −2,4 | −8,2 |
-| Alice in Chains (Down in a Hole, Sickman, Love Hate Love) | +2,0 | +3,4 | +3,0 | +2,4 | +0,5 | −0,8 | −3,1 | −7,4 |
+| | 60 | 125 | 250 | 500 | 1k | 2k | 4k | 8k | strona/środek |
+|---|---|---|---|---|---|---|---|---|---|
+| In Utero (Scentless Apprentice, Milk It) | +3,4 | +6,1 | +1,6 | −1,6 | −1,0 | +0,3 | −2,2 | −6,5 | −5,2 dB (bardzo szeroko) |
+| Dirt (Sickman, Down in a Hole) | +1,0 | +1,8 | +1,7 | +1,7 | +1,7 | +1,0 | −2,0 | −6,9 | −8,8 dB (węziej, dół w środku) |
 
-(dB względem średniej; z nagrań YouTube w mono, więc bez szerokości stereo i bez pasma > 12 kHz). Pozostałe style dostaną krzywe, gdy pojawią się nagrania referencyjne.
+Inne obserwacje: In Utero ma nawet dół rozłożony w stereo (korelacja L/R < 150 Hz ok. 0,65 – mikrofony sali), Dirt ma dół w środku (0,85–0,9). Pozostałe style dostaną krzywe, gdy pojawią się pliki referencyjne.
 
 ### Auto-miks
 Wstaw wtyczkę na każdą ścieżkę (wybierz źródło) i opcjonalnie na sumę (źródło „Cały miks”). Wybierz styl i kliknij **AUTO-MIKS** w dowolnej kopii, a potem zagraj ~6 s utworu:

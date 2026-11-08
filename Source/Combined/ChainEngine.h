@@ -57,6 +57,8 @@ public:
     float getMeasuredSeconds() const { return activeSeconds.load(); }
     /** Widmo z pomiaru: energia w 8 pasmach (dB), jak na wyjściu przed suwakiem. */
     void getMeasuredBandsDb (float* out8) const;
+    /** Szerokość stereo z pomiaru: energia strony względem środka (dB). */
+    float getMeasuredSideToMidDb() const { return 10.f * std::log10 ((sideMs.load() + 1e-12f) / (midMs.load() + 1e-12f)); }
 
 private:
     double sr = 48000.0;
@@ -85,6 +87,8 @@ private:
     stonoga::Biquad bandBp[sxa::kNumEqBands];
     double bandSq[sxa::kNumEqBands] {};
     std::array<std::atomic<float>, sxa::kNumEqBands> bandMs {};
+    double midSq = 0, sideSq = 0;
+    std::atomic<float> midMs { 0.f }, sideMs { 0.f };
 
     juce::SmoothedValue<float> faderGain, panL, panR;
 

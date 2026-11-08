@@ -183,6 +183,7 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         sumSq = 0.0; counted = 0;
         measuredMs = 0.f; activeSeconds = 0.f;
         for (int b = 0; b < sxa::kNumEqBands; ++b) { bandSq[b] = 0.0; bandMs[(size_t) b] = 0.f; bandBp[b].reset(); }
+        midSq = sideSq = 0.0; midMs = 0.f; sideMs = 0.f;
         for (int c = 0; c < 2; ++c) { kHp[c].reset(); kShelf[c].reset(); }
     }
     if (measuring.load())
@@ -191,9 +192,12 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         const auto* l = block.getChannelPointer (0);
         const auto* r = nCh > 1 ? block.getChannelPointer (1) : l;
         double bandBlock[sxa::kNumEqBands] {};
+        double midBlock = 0.0, sideBlock = 0.0;
         for (size_t i = 0; i < n; ++i)
         {
             const float m = 0.5f * (l[i] + r[i]);
+            const float sd = 0.5f * (l[i] - r[i]);
+            midBlock += (double) m * m; sideBlock += (double) sd * sd;
             for (int b = 0; b < sxa::kNumEqBands; ++b) { const float y = bandBp[b].process (m); bandBlock[b] += (double) y * y; }
         }
         for (size_t i = 0; i < n; ++i)   // moc obu kanałów: panorama ze stałą mocą jej nie zmienia
@@ -211,6 +215,9 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
                 bandSq[b] += bandBlock[b];
                 bandMs[(size_t) b] = (float) (bandSq[b] / (double) counted);
             }
+            midSq += midBlock; sideSq += sideBlock;
+            midMs = (float) (midSq / (double) counted);
+            sideMs = (float) (sideSq / (double) counted);
             activeSeconds = (float) ((double) counted / sr);
         }
     }
