@@ -25,6 +25,8 @@
 #include "MidSide.h"
 #include "SourceVoice.h"
 #include "DrivePedal.h"
+#include "ModFx.h"
+#include "DelayFx.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -120,6 +122,14 @@ private:
     MidSide midSide;
     SourceVoice voice;
     DrivePedal drive;
+    ModFx modFx;
+    DelayFx delayFx;
+    // wah na stałe (podbity środek) i trzy piece Jerdena
+    stonoga::Biquad wahBp[2];
+    float wahApplied = -1.f;
+    AmpStage ampLow, ampHigh;
+    juce::AudioBuffer<float> triLowBuf, triHighBuf;
+    stonoga::Biquad triLowLp[2], triLowHp[2], triMidHp[2], triMidLp[2], triHiHp[2], triHiLp[2];
     std::atomic<float> outPeak { 0.f };
     stonoga::Biquad trackBp[AlbumEq::numBands];
     std::array<std::atomic<float>, AlbumEq::numBands> trackMs {};

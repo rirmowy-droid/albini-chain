@@ -88,8 +88,51 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     undoButton.setTooltip (pl ("Cofnij ostatni auto-miks we wszystkich kopiach wtyczki"));
     undoButton.onClick = [this] { proc.requestUndoAutoMix(); };
 
-    const char* pageNames[2] = { "TOR", "KOMPRESOR I MIKS" };
-    for (int i = 0; i < 2; ++i)
+    // --- strona 3: efekty ---------------------------------------------------------
+    {
+        auto combo = [&] (juce::ComboBox& box, const char* const* names, int count, std::unique_ptr<ComboAtt>& att, const char* id,
+                          juce::Label& lab, const char* text)
+        {
+            for (int i = 0; i < count; ++i) box.addItem (pl (names[i]), i + 1);
+            att = std::make_unique<ComboAtt> (p.apvts, id, box);
+            styleLabel (lab, pl (text), seal);
+            lab.setJustificationType (juce::Justification::centredBottom);
+            page3.push_back (&box); page3.push_back (&lab);
+        };
+        combo (modBox, sxa::kModNames, sxa::kNumMods, modAtt, "modModel", modLabel, "Kostka");
+        combo (dlyBox, sxa::kDelayNames, sxa::kNumDelays, dlyAtt, "dlyModel", dlyLabel, "Typ");
+        for (const char* id : { "modRate", "modDepth", "modColour" }) addKnob (modKnobs, id, pl (shortNameFor (id)), true);
+        for (const char* id : { "dlyTime", "dlyFeedback", "dlyMix" }) addKnob (dlyKnobs, id, pl (shortNameFor (id)), true);
+        addKnob (wahKnobs, "wahPos", pl ("Pozycja"), true);
+        for (const char* id : { "triLow", "triMid", "triHigh" }) addKnob (triKnobs, id, pl (shortNameFor (id)), true);
+        for (auto* list : { &modKnobs, &dlyKnobs, &wahKnobs, &triKnobs })
+            for (auto* k : *list) { page3.push_back (&k->slider); page3.push_back (&k->label); }
+        wahButton.setButtonText (pl ("Wah włączony"));
+        triButton.setButtonText (pl ("Trzy piece włączone"));
+        wahAtt = std::make_unique<ButtonAtt> (p.apvts, "wahOn", wahButton);
+        triAtt = std::make_unique<ButtonAtt> (p.apvts, "triAmp", triButton);
+        for (auto* b : { &wahButton, &triButton })
+        {
+            b->setColour (juce::ToggleButton::textColourId, ink);
+            b->setColour (juce::ToggleButton::tickColourId, seal);
+            b->setColour (juce::ToggleButton::tickDisabledColourId, ink.withAlpha (0.5f));
+            page3.push_back (b);
+        }
+        fxInfo.setText (pl ("Kolejność dla gitary: wah -> kostka -> Stonoga -> piec (lub 3 piece) -> kolumna -> modulacja -> delay -> reszta toru. "
+                            "Modulacja i delay działają też na basie, bębnach i wokalu (nie na sumie)."), juce::dontSendNotification);
+        fxInfo.setColour (juce::Label::textColourId, paper.withAlpha (0.8f));
+        fxInfo.setFont (juce::FontOptions (13.f));
+        fxInfo.setJustificationType (juce::Justification::centredLeft);
+        page3.push_back (&fxInfo);
+        for (auto* c : page3) addChildComponent (c);
+        modPanel   = { pl ("MODULACJA (SMALL CLONE, POLYCHORUS, PHASE 90, SMALL STONE, FLANGER, ROTOVIBE)"), {}, seal, true };
+        delayPanel = { pl ("DELAY (ANALOGOWY / CYFROWY)"), {}, seal, true };
+        wahPanel   = { pl ("WAH NA STAŁE (PODBITY ŚRODEK)"), {}, seal, true };
+        triPanel   = { pl ("TRZY PIECE - TECHNIKA DAVE'A JERDENA (DIRT)"), {}, seal, true };
+    }
+
+    const char* pageNames[3] = { "TOR", "KOMPRESOR I MIKS", "EFEKTY" };
+    for (int i = 0; i < 3; ++i)
     {
         pageButtons[i].setButtonText (pl (pageNames[i]));
         pageButtons[i].setRadioGroupId (77);
@@ -324,6 +367,18 @@ void CombinedEditor::setPage (int newPage)
     for (auto* c : page2) c->setVisible (page == 1);
     for (auto* c : page2Track) c->setVisible (page == 1 && ! mix);
     for (auto* c : page2Master) c->setVisible (page == 1 && mix);
+    for (auto* c : page3) c->setVisible (page == 2);
+    {
+        const int srcP = proc.getSource();
+        const bool ped = sxa::hasPedal (srcP);
+        wahButton.setEnabled (ped);
+        triButton.setEnabled (ped && srcP == sxa::Guitar);
+        for (auto* k : wahKnobs) k->slider.setEnabled (ped);
+        for (auto* k : triKnobs) k->slider.setEnabled (ped && srcP == sxa::Guitar);
+        const bool notMix = srcP != sxa::Mix;
+        modBox.setEnabled (notMix); dlyBox.setEnabled (notMix);
+        for (auto* list : { &modKnobs, &dlyKnobs }) for (auto* k : *list) k->slider.setEnabled (notMix);
+    }
     for (auto* c : page1) c->setVisible (page == 0);
     updateVisibility (true);
     repaint();
@@ -458,7 +513,11 @@ void CombinedEditor::paint (juce::Graphics& g)
     g.setColour (ink); g.setFont (juce::FontOptions (26.f, juce::Font::bold));
     g.drawText ("x ALBINI", 188, 4, 160, 30, juce::Justification::centredLeft);
 
-    if (page == 0)
+    if (page == 2)
+    {
+        for (const auto* p : { &modPanel, &delayPanel, &wahPanel, &triPanel }) drawPanel (g, *p);
+    }
+    else if (page == 0)
     {
         const int src = proc.getSource();
         if (sxa::hasPedal (src)) { drawPanel (g, pedalPanel); drawPanel (g, drivePanel); drawPanel (g, ampPanel); drawPanel (g, cabPanel); }
@@ -629,6 +688,8 @@ void CombinedEditor::resized()
     pageButtons[0].setBounds (tabs.removeFromLeft (70));
     tabs.removeFromLeft (4);
     pageButtons[1].setBounds (tabs.removeFromLeft (160));
+    tabs.removeFromLeft (4);
+    pageButtons[2].setBounds (tabs.removeFromLeft (80));
 
     auto top = header.removeFromTop (28);
     undoButton.setBounds (top.removeFromRight (70));
@@ -646,6 +707,40 @@ void CombinedEditor::resized()
     area = area.reduced (8, 6);
     const auto content = area;
     const int rowH = (area.getHeight() - 18) / 4;
+
+    // ====================== strona 3: efekty ======================
+    {
+        auto a3 = content.reduced (0, 2);
+        fxInfo.setBounds (a3.removeFromBottom (40).reduced (12, 4));
+        const int h3 = (a3.getHeight() - 6) / 2;
+        auto rA = a3.removeFromTop (h3);
+        a3.removeFromTop (6);
+        auto rB = a3;
+        modPanel.bounds   = rA.removeFromLeft ((int) (rA.getWidth() * 0.62f)).reduced (3);
+        wahPanel.bounds   = rA.reduced (3);
+        delayPanel.bounds = rB.removeFromLeft ((int) (rB.getWidth() * 0.62f)).reduced (3);
+        triPanel.bounds   = rB.reduced (3);
+        auto withCombo = [this] (juce::ComboBox& box, juce::Label& lab, juce::OwnedArray<Knob>& knobs, juce::Rectangle<int> r)
+        {
+            auto in = r.reduced (10, 6).withTrimmedTop (18);
+            in = in.withSizeKeepingCentre (in.getWidth(), juce::jmin (in.getHeight(), 190));
+            const int w = in.getWidth() / (knobs.size() + 2);
+            layoutCombo (box, lab, in.withWidth (w * 2));
+            layoutKnobs (knobs, in, 2);
+        };
+        withCombo (modBox, modLabel, modKnobs, modPanel.bounds);
+        withCombo (dlyBox, dlyLabel, dlyKnobs, delayPanel.bounds);
+        auto withToggle = [] (juce::ToggleButton& b, juce::OwnedArray<Knob>& knobs, juce::Rectangle<int> r, CombinedEditor& ed)
+        {
+            auto in = r.reduced (10, 6).withTrimmedTop (18);
+            in = in.withSizeKeepingCentre (in.getWidth(), juce::jmin (in.getHeight(), 190));
+            const int w = in.getWidth() / (knobs.size() + 1);
+            b.setBounds (in.withWidth (w).withSizeKeepingCentre (w, 30));
+            ed.layoutKnobs (knobs, in, 1);
+        };
+        withToggle (wahButton, wahKnobs, wahPanel.bounds, *this);
+        withToggle (triButton, triKnobs, triPanel.bounds, *this);
+    }
 
     // ====================== strona 1 ======================
     {

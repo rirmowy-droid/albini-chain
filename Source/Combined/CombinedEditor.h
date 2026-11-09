@@ -111,10 +111,18 @@ private:
     std::unique_ptr<ComboAtt> sourceAtt, styleAtt;
     juce::TextButton autoMixButton { "AUTO-MIKS" };
     juce::TextButton undoButton;
-    juce::TextButton pageButtons[2];
+    juce::TextButton pageButtons[3];
     juce::Label statusLabel;
 
-    std::vector<juce::Component*> page1, page2;
+    std::vector<juce::Component*> page1, page2, page3;
+    // strona 3: efekty
+    Panel modPanel, delayPanel, wahPanel, triPanel;
+    juce::OwnedArray<Knob> modKnobs, dlyKnobs, wahKnobs, triKnobs;
+    juce::ComboBox modBox, dlyBox;
+    std::unique_ptr<ComboAtt> modAtt, dlyAtt;
+    juce::Label modLabel, dlyLabel, fxInfo;
+    juce::ToggleButton wahButton, triButton;
+    std::unique_ptr<ButtonAtt> wahAtt, triAtt;
     int lastSource = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CombinedEditor)

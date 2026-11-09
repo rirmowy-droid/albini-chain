@@ -167,6 +167,35 @@ namespace sxa
                        { &ST::ampModel, 7.f }, { &ST::ampDrive, 0.4f }, { &ST::srcComp, 0.35f }, { &ST::chorus, 0.2f }, { &ST::srcWidth, 0.7f },
                        { &ST::roomMix, 0.22f } }) },
 
+        { "Gitara: Come As You Are – Small Clone",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::ampModel, 11.f }, { &ST::ampDrive, 0.12f }, { &ST::modModel, 1.f }, { &ST::modRate, 0.28f },
+                       { &ST::modDepth, 0.85f }, { &ST::modColour, 0.6f }, { &ST::cabMic, 4.f }, { &ST::srcComp, 0.4f }, { &ST::srcWidth, 0.6f },
+                       { &ST::roomMix, 0.15f }, { &ST::tape, 0.35f }, { &ST::outputGain, 2.f } }) },
+
+        { "Gitara: Dirt – trzy piece Jerdena",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::triAmp, 1.f }, { &ST::ampModel, 1.f }, { &ST::ampDrive, 0.5f }, { &ST::triLow, 0.f },
+                       { &ST::triMid, 0.f }, { &ST::triHigh, -6.f }, { &ST::trueDouble, 1.f }, { &ST::srcComp, 0.4f }, { &ST::srcWidth, 1.f },
+                       { &ST::srcLoose, 0.35f }, { &ST::roomMix, 0.15f }, { &ST::tape, 0.4f }, { &ST::outputGain, 2.f } }) },
+
+        { "Gitara: Wah na stałe, Marshall po Bognerze",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::wahOn, 1.f }, { &ST::wahPos, 0.55f }, { &ST::ampModel, 6.f }, { &ST::ampDrive, 0.5f },
+                       { &ST::srcComp, 0.4f }, { &ST::srcWidth, 0.9f }, { &ST::srcLoose, 0.3f }, { &ST::roomMix, 0.18f }, { &ST::tape, 0.4f },
+                       { &ST::outputGain, -1.f } }) },
+
+        { "Gitara: Ranaldo – Rat i analogowy delay",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 3.f }, { &ST::drvGain, 0.45f }, { &ST::drvTone, 0.6f }, { &ST::ampModel, 9.f },
+                       { &ST::ampDrive, 0.35f }, { &ST::dlyModel, 1.f }, { &ST::dlyTime, 420.f }, { &ST::dlyFeedback, 0.7f }, { &ST::dlyMix, 0.35f },
+                       { &ST::srcComp, 0.3f }, { &ST::srcWidth, 0.7f }, { &ST::roomMix, 0.25f } }) },
+
+        { "Gitara: Rotovibe w Bognera, ciężko i płynnie",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::ampModel, 6.f }, { &ST::ampDrive, 0.55f }, { &ST::modModel, 6.f }, { &ST::modRate, 0.35f },
+                       { &ST::modDepth, 0.6f }, { &ST::srcComp, 0.4f }, { &ST::srcWidth, 0.9f }, { &ST::srcLoose, 0.3f }, { &ST::roomMix, 0.15f } }) },
+
         { "Bas: Big Muff w SVT",
           P ({}),
           S (Bass, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 5.f }, { &ST::drvGain, 0.55f }, { &ST::drvTone, 0.45f }, { &ST::ampModel, 4.f },

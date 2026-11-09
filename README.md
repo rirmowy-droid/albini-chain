@@ -125,6 +125,16 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 | Tape    | kompresja taśmy, head bump, utrata góry, delikatny wow/flutter |
 | Output  | gain wyjściowy |
 
+## Efekty, mikrofony, trzy piece (3.5) – strona EFEKTY
+
+- **Modulacja**: *Small Clone* (wodnisty chorus, Come As You Are), *Polychorus* (metaliczny, ze sprzężeniem), *Phase 90*, *Small Stone* (z „kolorem” = sprzężeniem), *Flanger*, *Rotovibe*. Gałki: szybkość, głębokość, kolor. Głośność wyrównana do sygnału bez efektu.
+- **Delay**: *Analogowy* (AD-80 / Memory Man: każde powtórzenie ciemniejsze, sprzężenie do 110% daje kontrolowany gwizd) i *Cyfrowy* (DGL-1). Czas 40–1000 ms, powtórzenia, ilość.
+- Modulacja i delay są w torze za piecem i kolumną (jak w pętli efektów) i działają na każdym źródle oprócz sumy.
+- **Wah na stałe**: rezonansowy garb środka 400–2200 Hz (Cantrell używał wah jako podbicia środka).
+- **Trzy piece (technika Dave'a Jerdena z „Dirt”)**: ten sam sygnał idzie w trzy piece – dół (Marshall po Bognerze, pasmo do ok. 500 Hz), środek (wybrany piec, 300 Hz–4 kHz) i góra (Rockman prosto w stół, od ok. 2 kHz). Gałki dół/środek/góra. Z *Prawdziwym dublem* daje 3 + 3 tory jak na płycie. Zużywa ok. 2x więcej procesora (tylko gdy włączone).
+- **Nowe mikrofony przy kolumnie**: *Wstęgowy RCA (Albini, chrapliwy)*, *AKG 414 (jasny)*, *U47 (ciepły, pełny)*.
+- Presety: *Come As You Are – Small Clone*, *Dirt – trzy piece Jerdena*, *Wah na stałe, Marshall po Bognerze*, *Ranaldo – Rat i analogowy delay*, *Rotovibe w Bognera*.
+
 ## Kostka przed Stonogą i piece z płyt (3.4)
 
 **Kostka przed Stonogą** (wiersz pod Stonogą, gitara i bas): *DS-1*, *DS-2 (Turbo)*, *Rat*, *Turbo Rat*, *Big Muff*, *SansAmp*, *Tube Screamer*, *Kompresor / sustainer*. Gałki: *Przester* (w kompresorze: sustain), *Barwa* (w kompresorze: szybkość ataku), *Głośność*. Działa też przy wyłączonej Stonodze – wtedy tor to kostka → piec → kolumna. Liczona w oversamplingu 4x/8x. Przy przesterze 0,5 każda gra mniej więcej tak głośno jak wejście (±4 dB).

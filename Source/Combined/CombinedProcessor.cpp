@@ -68,6 +68,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CombinedProcessor::createLay
                 else if (juce::String (def.id) == "consoleModel") ch = names (sxa::kConsoleNames, sxa::kNumConsoles);
                 else if (juce::String (def.id) == "ampModel") ch = names (sxa::kAmpNames, sxa::kNumAmps);
                 else if (juce::String (def.id) == "drvModel") ch = names (sxa::kDriveNames, sxa::kNumDrives);
+                else if (juce::String (def.id) == "modModel") ch = names (sxa::kModNames, sxa::kNumMods);
+                else if (juce::String (def.id) == "dlyModel") ch = names (sxa::kDelayNames, sxa::kNumDelays);
                 else if (juce::String (def.id) == "cabMic") ch = names (sxa::kCabMicNames, sxa::kNumCabMics);
                 else if (juce::String (def.id) == "tapeModel") ch = names (sxa::kTapeNames, sxa::kNumTapes);
                 else if (juce::String (def.id) == "tapeSpeed") ch = names (sxa::kTapeSpeedNames, 2);

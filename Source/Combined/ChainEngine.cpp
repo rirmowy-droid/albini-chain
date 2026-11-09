@@ -17,6 +17,24 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, boo
     pedal.builtInProtection = false;
     pedal.prepare (sampleRate * osFactor, nch);
     drive.prepare (sampleRate * osFactor);
+    modFx.prepare (sampleRate);
+    delayFx.prepare (sampleRate);
+    wahApplied = -1.f;
+    for (auto& b : wahBp) b.reset();
+    {
+        juce::dsp::ProcessSpec triSpec { sampleRate, (juce::uint32) maxBlockSize, (juce::uint32) nch };
+        ampLow.prepare (triSpec, osLog2);
+        ampHigh.prepare (triSpec, osLog2);
+        triLowBuf.setSize (nch, maxBlockSize, false, true, true);
+        triHighBuf.setSize (nch, maxBlockSize, false, true, true);
+        const float fs = (float) sampleRate;
+        for (int c = 0; c < 2; ++c)
+        {
+            triLowLp[c].lowpass (fs, 500.f, 0.6f);  triLowHp[c].highpass (fs, 55.f, 0.7f);
+            triMidHp[c].highpass (fs, 300.f, 0.5f); triMidLp[c].lowpass (fs, 4000.f, 0.6f);
+            triHiHp[c].highpass (fs, 2000.f, 0.6f); triHiLp[c].lowpass (fs, 7000.f, 0.7f);
+        }
+    }
     osDry.setSize (nch, maxBlockSize * osFactor, false, true, true);
     diBuf.setSize (nch, maxBlockSize, false, true, true);
     pedalMix.reset (sampleRate * osFactor, 0.02);
@@ -124,6 +142,22 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         for (size_t c = 0; c < wCh; ++c)
             juce::FloatVectorOperations::copy (diBuf.getWritePointer ((int) c), work.getChannelPointer (c), (int) n);
 
+    // --- wah ustawiony na stałe: rezonansowy garb środka (Cantrell) ---------------
+    if (pedalSource && s.wahOn > 0.5f)
+    {
+        if (std::abs (s.wahPos - wahApplied) > 0.002f)
+        {
+            wahApplied = s.wahPos;
+            const float f = 400.f * std::pow (5.5f, juce::jlimit (0.f, 1.f, s.wahPos));
+            for (auto& b : wahBp) b.bandpass ((float) sr, f, 3.5f);
+        }
+        for (size_t c = 0; c < wCh && c < 2; ++c)
+        {
+            auto* d = work.getChannelPointer (c);
+            for (size_t i = 0; i < n; ++i) d[i] = 0.25f * d[i] + 2.2f * wahBp[c].process (d[i]);
+        }
+    }
+
     // --- kostka (zawsze przez oversampling: stałe opóźnienie) ----------------
     {
         auto up = pedalOS->processSamplesUp (work);
@@ -168,7 +202,38 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     amp.setPresence (s.ampPresence);
     amp.setResonance (s.ampResonance);
     amp.setSag (s.ampSag);
+
+    // trzy piece (Jerden): ten sam sygnał w trzy wzmacniacze - dół, środek (wybrany piec), góra (Rockman bez kolumny)
+    const bool tri = pedalSource && ! bass && s.triAmp > 0.5f;
+    if (tri)
+    {
+        for (size_t c = 0; c < wCh; ++c)
+        {
+            juce::FloatVectorOperations::copy (triLowBuf.getWritePointer ((int) c), work.getChannelPointer (c), (int) n);
+            juce::FloatVectorOperations::copy (triHighBuf.getWritePointer ((int) c), work.getChannelPointer (c), (int) n);
+        }
+        auto lowBlk  = juce::dsp::AudioBlock<float> (triLowBuf).getSubsetChannelBlock (0, wCh).getSubBlock (0, n);
+        auto highBlk = juce::dsp::AudioBlock<float> (triHighBuf).getSubsetChannelBlock (0, wCh).getSubBlock (0, n);
+        ampLow.setPassThrough (false);  ampLow.setModel (AmpStage::BognerMarshall);
+        ampLow.setGain (s.ampInput);    ampLow.setDrive (juce::jmin (1.f, s.ampDrive + 0.1f)); ampLow.setResonance (0.3f); ampLow.setSag (0.4f);
+        ampHigh.setPassThrough (false); ampHigh.setModel (AmpStage::Brit800);
+        ampHigh.setGain (s.ampInput);   ampHigh.setDrive (0.6f); ampHigh.setPresence (0.4f); ampHigh.setSag (0.f);
+        ampLow.process (lowBlk);
+        ampHigh.process (highBlk);
+    }
     amp.process (work);
+
+    if (tri)
+    {
+        const float gL = juce::Decibels::decibelsToGain (s.triLow), gM = juce::Decibels::decibelsToGain (s.triMid);
+        for (size_t c = 0; c < wCh && c < 2; ++c)
+        {
+            auto* d = work.getChannelPointer (c);
+            const auto* lo = triLowBuf.getReadPointer ((int) c);
+            for (size_t i = 0; i < n; ++i)
+                d[i] = gM * triMidLp[c].process (triMidHp[c].process (d[i])) + gL * triLowLp[c].process (triLowHp[c].process (lo[i]));
+        }
+    }
 
     if (pedalSource)
     {
@@ -176,6 +241,17 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         cab.setBlend (s.cabBlend);
         cab.setMic ((int) std::round (s.cabMic), s.micPos, s.micDist);
         cab.process (work);
+    }
+
+    if (tri)   // Rockman: prosto w stół, z własnym filtrem „głośnika”
+    {
+        const float gH = juce::Decibels::decibelsToGain (s.triHigh);
+        for (size_t c = 0; c < wCh && c < 2; ++c)
+        {
+            auto* d = work.getChannelPointer (c);
+            const auto* hi = triHighBuf.getReadPointer ((int) c);
+            for (size_t i = 0; i < n; ++i) d[i] += gH * triHiLp[c].process (triHiHp[c].process (hi[i]));
+        }
     }
 
     // DI / piec: 0,5 = jak dotąd (0,8 piec + 0,9 czystego dołu z linii)
@@ -191,6 +267,13 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         }
 
     if (monoIn) juce::FloatVectorOperations::copy (block.getChannelPointer (1), block.getChannelPointer (0), (int) n);
+
+    // --- modulacja i delay (jak w pętli efektów: za piecem i kolumną; na wokalu/bębnach też działają) ---
+    if (source != sxa::Mix)
+    {
+        modFx.process (block, (int) std::round (s.modModel), s.modRate, s.modDepth, s.modColour);
+        delayFx.process (block, (int) std::round (s.dlyModel), s.dlyTime, s.dlyFeedback, s.dlyMix);
+    }
 
     // --- barwa ------------------------------------------------------------------
     tone.process (block, s);

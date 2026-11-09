@@ -202,7 +202,7 @@ void CabinetStage::updateMicFilters()
     const float sr = (float) sampleRate;
 
     // proximity: dynamiczne i wstęgowe mocniej, pojemnościowy (kardioida) słabiej
-    const float proxScale = micModel == MicRibbon ? 1.4f : micModel == MicCondenser ? 0.7f : 1.f;
+    const float proxScale = (micModel == MicRibbon || micModel == MicRCA) ? 1.4f : (micModel == MicCondenser || micModel == Mic414 || micModel == Mic47) ? 0.7f : 1.f;
     for (int c = 0; c < 2; ++c)
     {
         switch (micModel)
@@ -221,6 +221,21 @@ void CabinetStage::updateMicFilters()
                 micA[c].peak (sr, 200.f, 0.8f, 1.f);
                 micB[c].peak (sr, 5500.f, 1.2f, -2.f);
                 micC[c].highshelf (sr, 9000.f, 2.5f);
+                break;
+            case MicRCA:        // wstęgowy RCA (BK5 Albiniego): chrapliwa prezencja, ucięta najwyższa góra
+                micA[c].lowshelf (sr, 140.f, 1.5f);
+                micB[c].peak (sr, 3200.f, 1.1f, 2.f);
+                micC[c].highshelf (sr, 8500.f, -6.f);
+                break;
+            case Mic414:        // AKG 414: jasny, szczegółowy, trochę mniej „pudła”
+                micA[c].peak (sr, 400.f, 1.0f, -1.f);
+                micB[c].peak (sr, 5000.f, 1.2f, -1.5f);
+                micC[c].highshelf (sr, 8000.f, 3.f);
+                break;
+            case Mic47:         // U47: ciepły, pełny dół, gładka góra
+                micA[c].lowshelf (sr, 120.f, 2.f);
+                micB[c].peak (sr, 4800.f, 1.0f, -2.f);
+                micC[c].highshelf (sr, 10000.f, -1.5f);
                 break;
             default:            // jak w IR / SM57 (IR-y są zwykle nagrane 57)
                 micA[c].set (1, 0, 0, 1, 0, 0);

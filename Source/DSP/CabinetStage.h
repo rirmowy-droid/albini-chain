@@ -22,7 +22,7 @@
 class CabinetStage
 {
 public:
-    enum Mic { MicAsIR = 0, Mic57, Mic421, MicRibbon, MicCondenser, NumMics };
+    enum Mic { MicAsIR = 0, Mic57, Mic421, MicRibbon, MicCondenser, MicRCA, Mic414, Mic47, NumMics };
 
     CabinetStage();
 

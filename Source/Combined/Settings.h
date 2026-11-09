@@ -57,6 +57,10 @@ namespace sxa
         float tapeModel = 0, tapeSpeed = 0, trAttack = 0.f, trSustain = 0.f, deEss = 0.f;
         // prawdziwy dubel gitary, środek/boki sumy
         float drvModel = 0, drvGain = 0.5f, drvTone = 0.5f, drvLevel = 0.f;
+        float modModel = 0, modRate = 0.3f, modDepth = 0.5f, modColour = 0.4f;
+        float dlyModel = 0, dlyTime = 350.f, dlyFeedback = 0.35f, dlyMix = 0.25f;
+        float wahOn = 0, wahPos = 0.45f;
+        float triAmp = 0, triLow = 0.f, triMid = 0.f, triHigh = -6.f;
         float trueDouble = 0, msMonoBass = 20.f, msSideHigh = 0.f, msMidPresence = 0.f;
         // kanał konsolety (sterowany też z miksera na sumie)
         float mixFader = 0.f, mixMute = 0, mixSolo = 0, chLow = 0.f, chMid = 0.f, chMidHz = 1000.f, chHigh = 0.f;
@@ -112,8 +116,13 @@ namespace sxa
     inline const char* const kDriveNames[] = { "Brak", "DS-1", "DS-2 (Turbo)", "Rat", "Turbo Rat", "Big Muff",
                                                "SansAmp", "Tube Screamer", "Kompresor / sustainer" };
     inline constexpr int kNumDrives = 9;
-    inline const char* const kCabMicNames[] = { "Jak w IR (SM57)", "SM57", "MD421", "Wstęgowy (w stylu R-121)", "Pojemnościowy (w stylu U87)" };
-    inline constexpr int kNumCabMics = 5;
+    inline const char* const kCabMicNames[] = { "Jak w IR (SM57)", "SM57", "MD421", "Wstęgowy (w stylu R-121)", "Pojemnościowy (w stylu U87)",
+                                                "Wstęgowy RCA (Albini, chrapliwy)", "AKG 414 (jasny)", "U47 (ciepły, pełny)" };
+    inline constexpr int kNumCabMics = 8;
+    inline const char* const kModNames[] = { "Brak", "Small Clone", "Polychorus", "Phase 90", "Small Stone", "Flanger", "Rotovibe" };
+    inline constexpr int kNumMods = 7;
+    inline const char* const kDelayNames[] = { "Brak", "Analogowy (AD-80 / Memory Man)", "Cyfrowy (DGL-1)" };
+    inline constexpr int kNumDelays = 3;
     inline const char* const kTapeNames[] = { "Ogólny 2\"", "W stylu Studera A827", "W stylu MCI JH-24", "W stylu Ampexa MM1200" };
     inline constexpr int kNumTapes = 4;
     inline const char* const kTapeSpeedNames[] = { "30 cali/s", "15 cali/s" };
@@ -148,6 +157,20 @@ namespace sxa
         { "drvGain",    "Kostka: przester / sustain", "Przester", &Settings::drvGain,   0, 1,     Kind::Percent },
         { "drvTone",    "Kostka: barwa",          "Barwa",        &Settings::drvTone,    0, 1,     Kind::Percent },
         { "drvLevel",   "Kostka: głośność",       "Głośność",     &Settings::drvLevel, -12, 12,    Kind::Decibel },
+        { "modModel",   "Modulacja: model",       "Modulacja",    &Settings::modModel,   0, kNumMods - 1, Kind::Choice },
+        { "modRate",    "Modulacja: szybkość",    "Szybkość",     &Settings::modRate,    0, 1,     Kind::Percent },
+        { "modDepth",   "Modulacja: głębokość",   "Głębokość",    &Settings::modDepth,   0, 1,     Kind::Percent },
+        { "modColour",  "Modulacja: kolor / sprzężenie", "Kolor", &Settings::modColour,  0, 1,     Kind::Percent },
+        { "dlyModel",   "Delay: model",           "Delay",        &Settings::dlyModel,   0, kNumDelays - 1, Kind::Choice },
+        { "dlyTime",    "Delay: czas",            "Czas",         &Settings::dlyTime,   40, 1000,  Kind::Millis },
+        { "dlyFeedback","Delay: powtórzenia",     "Powtórzenia",  &Settings::dlyFeedback, 0, 1.1f, Kind::Percent },
+        { "dlyMix",     "Delay: ilość",           "Ilość",        &Settings::dlyMix,     0, 1,     Kind::Percent },
+        { "wahOn",      "Wah (stały): włączony",  "Wah",          &Settings::wahOn,      0, 1,     Kind::Toggle },
+        { "wahPos",     "Wah: pozycja (ciemno - jasno)", "Pozycja wah", &Settings::wahPos, 0, 1,  Kind::Percent },
+        { "triAmp",     "Trzy piece (technika Jerdena)", "3 piece", &Settings::triAmp,   0, 1,     Kind::Toggle },
+        { "triLow",     "3 piece: dół (Bogner)",  "Dół",          &Settings::triLow,   -12, 6,     Kind::Decibel },
+        { "triMid",     "3 piece: środek (twój piec)", "Środek",  &Settings::triMid,   -12, 6,     Kind::Decibel },
+        { "triHigh",    "3 piece: góra (Rockman)", "Góra",        &Settings::triHigh,  -18, 6,     Kind::Decibel },
         { "trueDouble", "Prawdziwy dubel (dwa podejścia przez przester)", "Prawdziwy dubel", &Settings::trueDouble, 0, 1, Kind::Toggle },
         { "msMonoBass", "Suma: mono dół poniżej",  "Mono dół",    &Settings::msMonoBass, 20, 250,  Kind::Hertz },
         { "msSideHigh", "Suma: góra boków",        "Góra boków",  &Settings::msSideHigh, -6, 6,    Kind::Decibel },
