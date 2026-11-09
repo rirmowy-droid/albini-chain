@@ -24,6 +24,7 @@
 #include "DoubleTake.h"
 #include "MidSide.h"
 #include "SourceVoice.h"
+#include "DrivePedal.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -118,6 +119,7 @@ private:
     DoubleTake doubleTake;
     MidSide midSide;
     SourceVoice voice;
+    DrivePedal drive;
     std::atomic<float> outPeak { 0.f };
     stonoga::Biquad trackBp[AlbumEq::numBands];
     std::array<std::atomic<float>, AlbumEq::numBands> trackMs {};

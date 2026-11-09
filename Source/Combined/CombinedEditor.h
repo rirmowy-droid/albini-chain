@@ -61,6 +61,11 @@ private:
     juce::Label ampModelLabel, cabMicLabel;
     juce::ToggleButton hqButton, alignButton, dblButton;
     std::unique_ptr<ButtonAtt> hqAtt, alignAtt, dblAtt;
+    Panel drivePanel;
+    juce::OwnedArray<Knob> driveKnobs;
+    juce::ComboBox driveBox;
+    std::unique_ptr<ComboAtt> driveAtt;
+    juce::Label driveLabel;
     Panel cabPanel, bassPanel, drumPanel, vocalPanel, mixerPanel, chanPanel;
     juce::OwnedArray<Knob> bassKnobs, drumKnobs, vocalKnobs, chanKnobs;
     std::unique_ptr<MixerView> mixer;

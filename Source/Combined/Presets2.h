@@ -120,6 +120,58 @@ namespace sxa
                        { &ST::srcLoose, 0.4f }, { &ST::srcSmear, 0.2f }, { &ST::srcSize, 0.5f }, { &ST::roomMix, 0.15f }, { &ST::tape, 0.4f },
                        { &ST::outputGain, 1.f } }) },
 
+        // --- w duchu konkretnych płyt (sprzęt z wywiadów; brzmienie to przybliżenie) ---
+        { "Gitara: Nevermind – DS-1 w Mesę",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 1.f }, { &ST::drvGain, 0.6f }, { &ST::drvTone, 0.45f },
+                       { &ST::ampModel, 11.f }, { &ST::ampDrive, 0.25f }, { &ST::ampPresence, 0.1f }, { &ST::cabMic, 4.f }, { &ST::micDist, 0.25f },
+                       { &ST::srcComp, 0.4f }, { &ST::srcWidth, 0.9f }, { &ST::srcLoose, 0.3f }, { &ST::srcSmear, 0.1f }, { &ST::roomMix, 0.12f },
+                       { &ST::tape, 0.4f }, { &ST::outputGain, 1.f } }) },
+
+        { "Gitara: Lithium – Big Muff w Bassmana",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 5.f }, { &ST::drvGain, 0.7f }, { &ST::drvTone, 0.4f },
+                       { &ST::ampModel, 8.f }, { &ST::ampDrive, 0.35f }, { &ST::cabMic, 4.f }, { &ST::micPos, 0.6f },
+                       { &ST::srcComp, 0.45f }, { &ST::srcWidth, 0.9f }, { &ST::srcLoose, 0.35f }, { &ST::roomMix, 0.15f }, { &ST::tape, 0.45f } }) },
+
+        { "Gitara: In Utero – zepsuty Quad, wstęgowy na środek",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 1.f }, { &ST::drvGain, 0.5f }, { &ST::drvTone, 0.55f },
+                       { &ST::ampModel, 5.f }, { &ST::ampDrive, 0.55f }, { &ST::ampSag, 0.5f }, { &ST::cabMic, 3.f }, { &ST::micPos, 0.f }, { &ST::micDist, 0.2f },
+                       { &ST::srcComp, 0.3f }, { &ST::srcWidth, 0.8f }, { &ST::srcLoose, 0.35f }, { &ST::roomMix, 0.28f }, { &ST::roomCrush, 0.4f },
+                       { &ST::tapeModel, 1.f }, { &ST::tape, 0.5f }, { &ST::outputGain, 1.f } }) },
+
+        { "Gitara: Daydream – Turbo Rat w Roadmastera",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 4.f }, { &ST::drvGain, 0.55f }, { &ST::drvTone, 0.6f },
+                       { &ST::ampModel, 10.f }, { &ST::ampDrive, 0.3f }, { &ST::ampPresence, 0.15f }, { &ST::trueDouble, 1.f },
+                       { &ST::srcComp, 0.3f }, { &ST::srcWidth, 1.f }, { &ST::srcLoose, 0.45f }, { &ST::srcSmear, 0.15f }, { &ST::roomMix, 0.25f },
+                       { &ST::tape, 0.4f } }) },
+
+        { "Gitara: Ranaldo – kompresor w Super Reverba",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 8.f }, { &ST::drvGain, 0.6f }, { &ST::drvTone, 0.6f },
+                       { &ST::ampModel, 9.f }, { &ST::ampDrive, 0.45f }, { &ST::cabMic, 4.f }, { &ST::cabBlend, 0.5f },
+                       { &ST::srcComp, 0.2f }, { &ST::srcWidth, 0.7f }, { &ST::srcSmear, 0.2f }, { &ST::slap, 0.15f }, { &ST::roomMix, 0.3f } }) },
+
+        { "Gitara: Dirt – Marshall po Bognerze, dwa podejścia",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::ampModel, 6.f }, { &ST::ampDrive, 0.55f }, { &ST::ampResonance, 0.2f }, { &ST::ampSag, 0.3f },
+                       { &ST::trueDouble, 1.f }, { &ST::cabMic, 1.f }, { &ST::cabBlend, 0.3f }, { &ST::micDist, 0.3f },
+                       { &ST::srcComp, 0.45f }, { &ST::srcWidth, 1.f }, { &ST::srcLoose, 0.35f }, { &ST::srcSmear, 0.15f }, { &ST::roomMix, 0.18f },
+                       { &ST::tape, 0.4f }, { &ST::outputGain, 1.f } }) },
+
+        { "Gitara: Tube Screamer w AC30, czysto-brudno",
+          P ({}),
+          S (Guitar, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 7.f }, { &ST::drvGain, 0.45f }, { &ST::drvTone, 0.5f },
+                       { &ST::ampModel, 7.f }, { &ST::ampDrive, 0.4f }, { &ST::srcComp, 0.35f }, { &ST::chorus, 0.2f }, { &ST::srcWidth, 0.7f },
+                       { &ST::roomMix, 0.22f } }) },
+
+        { "Bas: Big Muff w SVT",
+          P ({}),
+          S (Bass, { { &ST::pedalOn, 0.f }, { &ST::drvModel, 5.f }, { &ST::drvGain, 0.55f }, { &ST::drvTone, 0.45f }, { &ST::ampModel, 4.f },
+                     { &ST::ampDrive, 0.3f }, { &ST::baDi, 0.6f }, { &ST::srcComp, 0.5f }, { &ST::tape, 0.45f } }) },
+
         // ---------------- BAS ----------------
         { "Bas: Młot",
           P ({ { &SP::drive, 0.4f }, { &SP::soft, 0.8f } }),

@@ -63,7 +63,8 @@ struct DBiquad
 class AmpStage
 {
 public:
-    enum Model { Albini = 0, Brit800, Rectifier, CleanUS, BassSVT, NumModels };
+    enum Model { Albini = 0, Brit800, Rectifier, CleanUS, BassSVT,
+                 QuadBroken, BognerMarshall, AC30, Bassman, SuperReverb, Roadmaster, MesaStudioSS, NumModels };
 
     /** osFactorLog2: 2 = 4x, 3 = 8x (wysoka jakość). */
     void prepare (const juce::dsp::ProcessSpec& spec, int osFactorLog2 = 2);
@@ -90,6 +91,10 @@ private:
         float bias, interLp, interHpf;
         float lowHz, lowDb, midHz, midQ, midDb, hiHz, hiDb;
         float powerDb, trimDb;
+        float powerAsym = 0.f;   // końcówka: 0 = przeciwsobna symetryczna, > 0 = jak z jedną lampą / klasa A
+        float buzz = 0.f;        // przepalony głośnik: grzechotanie przy mocnym dole
+        int solidState = 0;      // końcówka tranzystorowa: twarde obcinanie, bez sag
+        float sagExtra = 0.f;    // ile mocniej „przysiada” zasilanie
     };
     static const ModelDef& def (int m);
 
@@ -120,6 +125,7 @@ private:
     DBiquad toneLow[maxCh], toneMid[maxCh], toneHigh[maxCh];
     stonoga::Biquad modelHp[maxCh];               // sprzężenie wejścia (zależne od modelu)
     stonoga::Biquad presenceF[maxCh], resonanceF[maxCh];
+    DBiquad buzzLp[maxCh], buzzHp[maxCh];
     float sagEnv = 0.f, sagAtt = 0.f, sagRel = 0.f;
     float cachedDrive = -1.f, cachedGs = 1.f, cachedComp = 1.f;
 

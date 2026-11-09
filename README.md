@@ -125,6 +125,14 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 | Tape    | kompresja taśmy, head bump, utrata góry, delikatny wow/flutter |
 | Output  | gain wyjściowy |
 
+## Kostka przed Stonogą i piece z płyt (3.4)
+
+**Kostka przed Stonogą** (wiersz pod Stonogą, gitara i bas): *DS-1*, *DS-2 (Turbo)*, *Rat*, *Turbo Rat*, *Big Muff*, *SansAmp*, *Tube Screamer*, *Kompresor / sustainer*. Gałki: *Przester* (w kompresorze: sustain), *Barwa* (w kompresorze: szybkość ataku), *Głośność*. Działa też przy wyłączonej Stonodze – wtedy tor to kostka → piec → kolumna. Liczona w oversamplingu 4x/8x. Przy przesterze 0,5 każda gra mniej więcej tak głośno jak wejście (±4 dB).
+
+**Nowe piece**: *Zepsuty Fender Quad (In Utero)* – jedna lampa mocy, przepalony głośnik, bright; *Marshall po przeróbce Bognera (Alice in Chains)*; *Vox AC30 top boost*; *Fender Bassman (tweed)*; *Fender Super Reverb (4x10)*; *Peavey Roadmaster (Sonic Youth)*; *Mesa Studio + końcówka tranzystorowa*.
+
+**Presety w duchu płyt** (sprzęt z wywiadów z muzykami i producentami; brzmienie to przybliżenie, nie kopia): *Nevermind – DS-1 w Mesę*, *Lithium – Big Muff w Bassmana*, *In Utero – zepsuty Quad, wstęgowy na środek*, *Daydream – Turbo Rat w Roadmastera*, *Ranaldo – kompresor w Super Reverba*, *Dirt – Marshall po Bognerze, dwa podejścia*, *Tube Screamer w AC30*, *Bas: Big Muff w SVT*.
+
 ## Piec, mikrofon przy kolumnie, jakość 8x (Stonoga x Albini)
 
 - **Piec**: *Albini* (prosty crunch, jak dotąd), *Brytyjski 800* (w stylu Marshalla JCM800: środek do przodu), *Prostownik* (w stylu Mesa Dual Rectifier: dużo gainu, wycięty środek, zwarty dół), *Amerykański czysty* (w stylu Fendera Twin: dużo zapasu, rwie się końcówka), *Basowy SVT* (w stylu Ampega). Każdy ma kilka stopni lampowych, własną barwę i końcówkę mocy.

@@ -139,6 +139,11 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     for (const auto& d : sxa::kPedal) addKnob (pedalKnobs, d.id, pl (d.name), true);
     for (const char* id : { "ampInput", "ampDrive", "ampPresence", "ampResonance", "ampSag" }) addKnob (ampKnobs, id, pl (shortNameFor (id)), true);
     for (const char* id : { "cabBlend", "micPos", "micDist" }) addKnob (cabKnobs, id, pl (shortNameFor (id)), true);
+    for (const char* id : { "drvGain", "drvTone", "drvLevel" }) addKnob (driveKnobs, id, pl (shortNameFor (id)), true);
+    for (int i = 0; i < sxa::kNumDrives; ++i) driveBox.addItem (pl (sxa::kDriveNames[i]), i + 1);
+    driveAtt = std::make_unique<ComboAtt> (p.apvts, "drvModel", driveBox);
+    styleLabel (driveLabel, pl ("Model"), seal);
+    driveLabel.setJustificationType (juce::Justification::centredBottom);
     for (const char* id : { "baDi", "baLow", "baGrowl", "baClick" }) addKnob (bassKnobs, id, pl (shortNameFor (id)), true);
     for (const char* id : { "drKick", "drBox", "drSnare", "drCrack", "drCymbals", "trAttack", "trSustain", "roomCrush" })
         addKnob (drumKnobs, id, pl (shortNameFor (id)), true);
@@ -191,17 +196,18 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
     }
     lastIRFolder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
 
-    for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs, &bassKnobs, &drumKnobs, &vocalKnobs })
+    for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs, &driveKnobs, &srcKnobs, &studioKnobs, &busKnobs, &outKnobs, &bassKnobs, &drumKnobs, &vocalKnobs })
         for (auto* k : *list) { page1.push_back (&k->slider); page1.push_back (&k->label); }
     for (auto* c : std::initializer_list<juce::Component*> { &micBox, &micLabel, &consoleBox, &consoleLabel, &noPedalLabel, &footswitch,
                                                              &ampModelBox, &ampModelLabel, &cabMicBox, &cabMicLabel, &hqButton, &alignButton,
-                                                             &tapeBox, &tapeSpeedBox, &tapeLabel, &dblButton })
+                                                             &tapeBox, &tapeSpeedBox, &tapeLabel, &dblButton, &driveBox, &driveLabel })
         page1.push_back (c);
     for (auto& s : irSlots) { page1.push_back (&s.load); page1.push_back (&s.clear); page1.push_back (&s.choose); }
 
     pedalPanel  = { "KOSTKA STONOGA", {}, seal, true };
     ampPanel    = { "WZMACNIACZ", {}, seal, true };
     cabPanel    = { "KOLUMNA I MIKROFON", {}, seal, true };
+    drivePanel  = { pl ("KOSTKA PRZED STONOGĄ"), {}, seal, true };
     bassPanel   = { pl ("BAS: DI, DÓŁ, WARKOT, KLIK"), {}, seal, true };
     drumPanel   = { pl ("BĘBNY: STOPA, PUDŁO, WERBEL, TRZASK, TALERZE, ATAK, WYBRZMIENIE, SALA"), {}, seal, true };
     vocalPanel  = { pl ("WOKAL: BLISKOŚĆ, NOS, PRZÓD, POWIETRZE, SYCZENIE, ECHO"), {}, seal, true };
@@ -353,8 +359,9 @@ void CombinedEditor::updateVisibility (bool force)
     if (page == 0)
     {
         const bool pedal = sxa::hasPedal (src);
-        for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs })
+        for (auto* list : { &pedalKnobs, &ampKnobs, &cabKnobs, &driveKnobs })
             for (auto* k : *list) { k->slider.setVisible (pedal); k->label.setVisible (pedal); }
+        driveBox.setVisible (pedal); driveLabel.setVisible (pedal);
         auto showList = [] (juce::OwnedArray<Knob>& l, bool v) { for (auto* k : l) { k->slider.setVisible (v); k->label.setVisible (v); } };
         showList (bassKnobs, src == sxa::Bass);
         showList (drumKnobs, src == sxa::Drums);
@@ -454,7 +461,7 @@ void CombinedEditor::paint (juce::Graphics& g)
     if (page == 0)
     {
         const int src = proc.getSource();
-        if (sxa::hasPedal (src)) { drawPanel (g, pedalPanel); drawPanel (g, ampPanel); drawPanel (g, cabPanel); }
+        if (sxa::hasPedal (src)) { drawPanel (g, pedalPanel); drawPanel (g, drivePanel); drawPanel (g, ampPanel); drawPanel (g, cabPanel); }
         if (src == sxa::Bass)   drawPanel (g, bassPanel);
         if (src == sxa::Drums)  drawPanel (g, drumPanel);
         if (src == sxa::Vocals) drawPanel (g, vocalPanel);
@@ -670,9 +677,16 @@ void CombinedEditor::resized()
 
         // piec | kolumna i mikrofon
         auto r2 = a.removeFromTop (rowH1);
-        ampPanel.bounds = r2.removeFromLeft ((int) (r2.getWidth() * 0.58f)).reduced (3);
+        const int r2w = r2.getWidth();
+        drivePanel.bounds = r2.removeFromLeft ((int) (r2w * 0.29f)).reduced (3);
+        ampPanel.bounds = r2.removeFromLeft ((int) (r2w * 0.43f)).reduced (3);
         cabPanel.bounds = r2.reduced (3);
         {
+            auto di = drivePanel.bounds.reduced (8, 4);
+            const int w0 = di.getWidth() / (driveKnobs.size() + 2);
+            layoutCombo (driveBox, driveLabel, di.withWidth (w0 * 2));
+            layoutKnobs (driveKnobs, di, 2);
+
             auto ai = ampPanel.bounds.reduced (8, 4);
             const int w = ai.getWidth() / (ampKnobs.size() + 2);
             auto comboCell = ai.withWidth (w * 2);

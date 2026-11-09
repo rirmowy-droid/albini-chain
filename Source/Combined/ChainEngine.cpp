@@ -16,6 +16,7 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, boo
     pedalOS->initProcessing ((size_t) maxBlockSize);
     pedal.builtInProtection = false;
     pedal.prepare (sampleRate * osFactor, nch);
+    drive.prepare (sampleRate * osFactor);
     osDry.setSize (nch, maxBlockSize * osFactor, false, true, true);
     diBuf.setSize (nch, maxBlockSize, false, true, true);
     pedalMix.reset (sampleRate * osFactor, 0.02);
@@ -127,6 +128,8 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
     {
         auto up = pedalOS->processSamplesUp (work);
         const auto nUp = up.getNumSamples();
+        // kostka przed Stonogą (DS-1, Rat, Big Muff...) - działa też przy wyłączonej Stonodze
+        if (pedalSource) drive.process (up, (int) std::round (s.drvModel), s.drvGain, s.drvTone, s.drvLevel);
         // oszczędzanie: wyłączona kostka po ~3 s (gdy ogony wybrzmiały) przestaje liczyć
         pedalMix.setTargetValue (s.pedalOn > 0.5f ? 1.f : 0.f);
         const bool pedalSilent = s.pedalOn < 0.5f && ! pedalMix.isSmoothing() && pedalMix.getCurrentValue() <= 0.f;

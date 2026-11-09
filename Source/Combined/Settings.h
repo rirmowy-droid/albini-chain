@@ -56,6 +56,7 @@ namespace sxa
         // magnetofon, atak/wybrzmienie, odsyczanie
         float tapeModel = 0, tapeSpeed = 0, trAttack = 0.f, trSustain = 0.f, deEss = 0.f;
         // prawdziwy dubel gitary, środek/boki sumy
+        float drvModel = 0, drvGain = 0.5f, drvTone = 0.5f, drvLevel = 0.f;
         float trueDouble = 0, msMonoBass = 20.f, msSideHigh = 0.f, msMidPresence = 0.f;
         // kanał konsolety (sterowany też z miksera na sumie)
         float mixFader = 0.f, mixMute = 0, mixSolo = 0, chLow = 0.f, chMid = 0.f, chMidHz = 1000.f, chHigh = 0.f;
@@ -103,8 +104,14 @@ namespace sxa
     inline constexpr int kNumCompChars = 6;
     inline const char* const kAmpNames[] = { "Albini (prosty, crunch)", "Brytyjski 800 (w stylu Marshalla JCM800)",
                                              "Prostownik (w stylu Mesa Dual Rectifier)", "Amerykański czysty (w stylu Fendera Twin)",
-                                             "Basowy SVT (w stylu Ampega)" };
-    inline constexpr int kNumAmps = 5;
+                                             "Basowy SVT (w stylu Ampega)",
+                                             "Zepsuty Fender Quad (In Utero)", "Marshall po przeróbce Bognera (Alice in Chains)",
+                                             "Vox AC30 top boost", "Fender Bassman (tweed)", "Fender Super Reverb (4x10)",
+                                             "Peavey Roadmaster (Sonic Youth)", "Mesa Studio + końcówka tranzystorowa" };
+    inline constexpr int kNumAmps = 12;
+    inline const char* const kDriveNames[] = { "Brak", "DS-1", "DS-2 (Turbo)", "Rat", "Turbo Rat", "Big Muff",
+                                               "SansAmp", "Tube Screamer", "Kompresor / sustainer" };
+    inline constexpr int kNumDrives = 9;
     inline const char* const kCabMicNames[] = { "Jak w IR (SM57)", "SM57", "MD421", "Wstęgowy (w stylu R-121)", "Pojemnościowy (w stylu U87)" };
     inline constexpr int kNumCabMics = 5;
     inline const char* const kTapeNames[] = { "Ogólny 2\"", "W stylu Studera A827", "W stylu MCI JH-24", "W stylu Ampexa MM1200" };
@@ -137,6 +144,10 @@ namespace sxa
         { "trAttack",   "Atak (kształt transjentów)", "Atak",     &Settings::trAttack,  -1, 1,     Kind::Pan },
         { "trSustain",  "Wybrzmienie (kształt transjentów)", "Wybrzmienie", &Settings::trSustain, -1, 1, Kind::Pan },
         { "deEss",      "Odsyczanie",             "Odsyczanie",   &Settings::deEss,      0, 1,     Kind::Percent },
+        { "drvModel",   "Kostka przed Stonogą: model", "Kostka", &Settings::drvModel,  0, kNumDrives - 1, Kind::Choice },
+        { "drvGain",    "Kostka: przester / sustain", "Przester", &Settings::drvGain,   0, 1,     Kind::Percent },
+        { "drvTone",    "Kostka: barwa",          "Barwa",        &Settings::drvTone,    0, 1,     Kind::Percent },
+        { "drvLevel",   "Kostka: głośność",       "Głośność",     &Settings::drvLevel, -12, 12,    Kind::Decibel },
         { "trueDouble", "Prawdziwy dubel (dwa podejścia przez przester)", "Prawdziwy dubel", &Settings::trueDouble, 0, 1, Kind::Toggle },
         { "msMonoBass", "Suma: mono dół poniżej",  "Mono dół",    &Settings::msMonoBass, 20, 250,  Kind::Hertz },
         { "msSideHigh", "Suma: góra boków",        "Góra boków",  &Settings::msSideHigh, -6, 6,    Kind::Decibel },
