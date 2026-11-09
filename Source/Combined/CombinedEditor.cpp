@@ -181,7 +181,7 @@ CombinedEditor::CombinedEditor (CombinedProcessor& p)
 
     for (const auto& d : sxa::kPedal) addKnob (pedalKnobs, d.id, pl (d.name), true);
     for (const char* id : { "ampInput", "ampDrive", "ampPresence", "ampResonance", "ampSag" }) addKnob (ampKnobs, id, pl (shortNameFor (id)), true);
-    for (const char* id : { "cabBlend", "micPos", "micDist" }) addKnob (cabKnobs, id, pl (shortNameFor (id)), true);
+    for (const char* id : { "cabBlend", "micPos", "micDist", "cabAir" }) addKnob (cabKnobs, id, pl (shortNameFor (id)), true);
     for (const char* id : { "drvGain", "drvTone", "drvLevel" }) addKnob (driveKnobs, id, pl (shortNameFor (id)), true);
     for (int i = 0; i < sxa::kNumDrives; ++i) driveBox.addItem (pl (sxa::kDriveNames[i]), i + 1);
     driveAtt = std::make_unique<ComboAtt> (p.apvts, "drvModel", driveBox);

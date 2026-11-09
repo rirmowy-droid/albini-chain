@@ -10,14 +10,14 @@ const AmpStage::ModelDef& AmpStage::def (int m)
     //                 inHpf  brightHz dB   maxDb st bias  interLp interHp  lowHz lowDb  midHz Q    midDb  hiHz  hiDb  power trim
     static const ModelDef defs[NumModels] = {
         {  90.f, 1800.f, 3.f, 30.f, 1, 0.20f, 11000.f, 20.f,  100.f, 0.f,   700.f, 0.8f, 0.f,  3000.f, 0.f,  0.f,  0.f }, // (nieużywany)
-        { 100.f, 2500.f, 4.f, 44.f, 2, 0.25f,  7500.f, 70.f,  100.f, -1.f,  700.f, 0.8f, 3.5f, 3000.f, 2.f, 10.f, -9.0f }, // brytyjski 800
-        { 120.f, 3000.f, 3.f, 56.f, 3, 0.15f,  6500.f, 90.f,  120.f, 3.f,   600.f, 0.7f, -5.f, 3500.f, 2.f, 14.f, -10.0f }, // prostownik
+        { 100.f, 2500.f, 4.f, 44.f, 2, 0.25f,  9000.f, 70.f,  100.f, -1.f,  700.f, 0.8f, 3.5f, 3000.f, 2.f, 10.f, -9.0f }, // brytyjski 800
+        { 120.f, 3000.f, 3.f, 56.f, 3, 0.15f,  8000.f, 90.f,  120.f, 3.f,   600.f, 0.7f, -5.f, 3500.f, 2.f, 14.f, -10.0f }, // prostownik
         {  60.f, 2000.f, 5.f, 24.f, 1, 0.06f, 10000.f, 30.f,  150.f, 2.f,   450.f, 0.6f, -4.f, 4000.f, 2.5f, 12.f, -5.0f }, // amerykański czysty
         {  30.f, 1500.f, 2.f, 30.f, 2, 0.20f,  5000.f, 25.f,   80.f, 3.f,   450.f, 0.8f, 1.5f, 4000.f, -3.f, 12.f, -10.0f }, // basowy SVT
         // zepsuty Fender Quad Reverb (In Utero): jedna lampa mocy, przepalony głośnik, bright włączony
         {  70.f, 2000.f, 6.f, 26.f, 1, 0.10f,  9000.f, 40.f,  120.f, 1.f,   450.f, 0.6f, -2.f, 4000.f, 2.f, 16.f, -7.0f, 0.45f, 0.35f, 0, 1.0f },
         // Marshall po przeróbce Bognera (Alice in Chains): dodatkowy stopień, czytelny dół, warczący środek
-        { 100.f, 2200.f, 3.f, 52.f, 3, 0.22f,  7000.f, 80.f,  110.f, 1.5f,  800.f, 0.8f, 3.f,  3200.f, 1.5f, 10.f, -12.0f },
+        { 100.f, 2200.f, 3.f, 52.f, 3, 0.22f,  8500.f, 80.f,  110.f, 1.5f,  800.f, 0.8f, 3.f,  3200.f, 1.5f, 10.f, -12.0f },
         // Vox AC30 top boost: klasa A, dzwoniąca góra, mniej dołu
         {  60.f, 2800.f, 5.f, 30.f, 2, 0.30f,  9000.f, 50.f,  100.f, -2.f,  900.f, 0.7f, -1.5f, 2800.f, 4.f, 14.f, -9.0f, 0.20f, 0.f, 0, 0.5f },
         // Fender Bassman (tweed): luźny dół, środek, wcześnie się rwie
@@ -27,7 +27,7 @@ const AmpStage::ModelDef& AmpStage::def (int m)
         // Peavey Roadmaster (Sonic Youth): jasny, przebojowy górny środek
         {  80.f, 2500.f, 4.f, 40.f, 2, 0.20f,  8500.f, 60.f,  100.f, -1.f, 1200.f, 0.8f, 2.f,  3500.f, 3.f, 12.f, -9.0f },
         // Mesa Studio preamp + końcówka tranzystorowa (Nirvana na żywo): podbity środek, twardo, bez sag
-        {  90.f, 2500.f, 3.f, 46.f, 3, 0.18f,  6000.f, 80.f,  120.f, 1.f,   750.f, 0.8f, 4.f,  3000.f, 2.f,  8.f, -13.0f, 0.f, 0.f, 1, 0.f },
+        {  90.f, 2500.f, 3.f, 46.f, 3, 0.18f,  7500.f, 80.f,  120.f, 1.f,   750.f, 0.8f, 4.f,  3000.f, 2.f,  8.f, -13.0f, 0.f, 0.f, 1, 0.f },
     };
     return defs[juce::jlimit (0, (int) NumModels - 1, m)];
 }
@@ -64,6 +64,8 @@ void AmpStage::prepare (const juce::dsp::ProcessSpec& spec, int osFactorLog2)
     const double osRate = sampleRate * (double) (1 << osLog2);
     driveSmoothed.reset (osRate, 0.05);
     sagAtt = (float) std::exp (-1.0 / (0.004 * osRate));
+    blkAtt = (float) std::exp (-1.0 / (0.001 * osRate));
+    blkRel = (float) std::exp (-1.0 / (0.06 * osRate));
     sagRel = (float) std::exp (-1.0 / (0.15 * osRate));
 
     appliedModel = -1;
@@ -87,6 +89,8 @@ void AmpStage::reset()
         toneLow[c].reset(); toneMid[c].reset(); toneHigh[c].reset();
         modelHp[c].reset(); presenceF[c].reset(); resonanceF[c].reset();
         buzzLp[c].reset(); buzzHp[c].reset();
+        xfmrPre[c].reset(); xfmrPost[c].reset();
+        for (auto& e : blockEnv[c]) e = 0.f;
     }
     sagEnv = 0.f;
 }
@@ -140,6 +144,8 @@ void AmpStage::updateModelFilters()
         toneHigh[c].highshelf (osRate, d.hiHz, d.hiDb);
         modelHp[c].highpass ((float) sampleRate, d.inHpf, 0.7f);
         buzzLp[c].lowpass (osRate, 250.0, 0.7);
+        xfmrPre[c].lowshelf (osRate, 90.0, 5.0);
+        xfmrPost[c].lowshelf (osRate, 90.0, -5.0);
         buzzHp[c].highpass (osRate, 1200.0, 0.7);
     }
 }
@@ -164,7 +170,7 @@ void AmpStage::processModelled (juce::dsp::AudioBlock<float>& up)
     const float pg = juce::Decibels::decibelsToGain (d.powerDb);
     const float pgComp = 1.f / std::sqrt (pg);
     const float trim = juce::Decibels::decibelsToGain (d.trimDb);
-    const float tb = std::tanh (d.bias), bOdd = -0.6f * d.bias, tbOdd = std::tanh (bOdd);
+    const float bOdd = -0.6f * d.bias;
 
     float* ch[maxCh] {};
     for (int c = 0; c < nCh; ++c) ch[c] = up.getChannelPointer ((size_t) c);
@@ -192,15 +198,22 @@ void AmpStage::processModelled (juce::dsp::AudioBlock<float>& up)
             float x = ch[c][i];
             for (int s = 0; s < d.stages; ++s)
             {
-                // odwracające stopnie: asymetria na zmianę
-                x = (s & 1) ? fastTanh (x * gs + bOdd) - tbOdd : fastTanh (x * gs + d.bias) - tb;
+                // trioda: od góry prąd siatki (twardo, nisko), od dołu odcięcie (miękko, wyżej);
+                // po mocnym uderzeniu kondensator sprzęgający „zatyka” stopień -> brud i oddech przy wybrzmieniu
+                float& be = blockEnv[c][s];
+                const float v = x * gs + ((s & 1) ? bOdd : d.bias) - 0.6f * be;
+                const float gridCur = juce::jmax (0.f, v - 0.35f);
+                be = gridCur > be ? blkAtt * be + (1.f - blkAtt) * gridCur : blkRel * be + (1.f - blkRel) * gridCur;
+                x = v > 0.f ? 0.62f * fastTanh (v / 0.62f) : fastTanh (v);
+                if (s & 1) x = -x;    // stopień odwracający
                 x = interLp[c][s].process (interHp[c][s].process (x));
             }
             x *= comp * (float) d.stages;
             x = toneHigh[c].process (toneMid[c].process (toneLow[c].process (x)));
 
             // końcówka mocy przeciwsobna: symetryczne, miękkie obcinanie do napięcia zasilania
-            const float drivePow = x * pg;
+            // transformator: dół wchodzi w nasycenie mocniej (podbicie przed, zdjęcie po obcięciu)
+            const float drivePow = (d.solidState ? x : xfmrPre[c].process (x)) * pg;
             peak = juce::jmax (peak, std::abs (drivePow) * 0.5f);
             const float u = drivePow / supply;
             float y;
@@ -210,6 +223,7 @@ void AmpStage::processModelled (juce::dsp::AudioBlock<float>& up)
                 y = supply * fastTanh (u > 0.f ? u * (1.f + d.powerAsym) : u * (1.f - 0.7f * d.powerAsym));
             else
                 y = supply * fastTanh (u);
+            if (! d.solidState) y = xfmrPost[c].process (y);
             if (d.buzz > 0.f)
             {
                 // przepalony głośnik: mocny dół „grzechocze” - nadmiar ponad próg, przefiltrowany w górę

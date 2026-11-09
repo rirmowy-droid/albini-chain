@@ -125,6 +125,14 @@ Szumowe efekty i stary chór Stonogi przejdą do osobnego efektu (kod w `Source/
 | Tape    | kompresja taśmy, head bump, utrata góry, delikatny wow/flutter |
 | Output  | gain wyjściowy |
 
+## Brud pieców i równa głośność (3.6)
+
+- **Lampy jak lampy**: każdy stopień przedwzmacniacza obcina górną połówkę fali twardziej (prąd siatki) niż dolną, a po mocnym uderzeniu chwilowo się „zatyka” – przy wybrzmiewaniu akordu słychać brud i oddech zamiast sterylnego przesteru. Transformator wyjściowy nasyca najpierw dół (masa i „wibracja” przy power chordach). Piece z dużym gainem mają więcej górnego „fizzu” przed kolumną.
+- **Powietrze** (kolumna): wczesne odbicia małego pokoju wokół pieca, inne w L i P – gitara przestaje brzmieć jak z próżni, a zostaje blisko.
+- **Presety z płyt przestrojone**: piece mocniej popchnięte, dwa podejścia, powietrze pokoju; *Dirt* z Tube Screamerem jako boostem przed Marshallem po Bognerze (jak grał Cantrell).
+- **Równa głośność presetów**: wszystkie gitarowe grają na tym samym poziomie (±0,6 dB), basowe też (±0,5 dB) – porównujesz brzmienie, a nie głośność.
+- Phasery i Rotovibe nie ruszają dołu poniżej ok. 180 Hz – niskie struny nie pływają w stroju.
+
 ## Efekty, mikrofony, trzy piece (3.5) – strona EFEKTY
 
 - **Modulacja**: *Small Clone* (wodnisty chorus, Come As You Are), *Polychorus* (metaliczny, ze sprzężeniem), *Phase 90*, *Small Stone* (z „kolorem” = sprzężeniem), *Flanger*, *Rotovibe*. Gałki: szybkość, głębokość, kolor. Głośność wyrównana do sygnału bez efektu.

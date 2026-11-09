@@ -19,6 +19,7 @@ void ChainEngine::prepare (double sampleRate, int maxBlock, int numChannels, boo
     drive.prepare (sampleRate * osFactor);
     modFx.prepare (sampleRate);
     delayFx.prepare (sampleRate);
+    cabAir.prepare (sampleRate);
     wahApplied = -1.f;
     for (auto& b : wahBp) b.reset();
     {
@@ -267,6 +268,9 @@ void ChainEngine::process (juce::dsp::AudioBlock<float>& block, const sxa::Setti
         }
 
     if (monoIn) juce::FloatVectorOperations::copy (block.getChannelPointer (1), block.getChannelPointer (0), (int) n);
+
+    // powietrze pokoju wokół kolumny (stereo, także dla gitary nagranej w mono)
+    if (pedalSource) cabAir.process (block, s.cabAir);
 
     // --- modulacja i delay (jak w pętli efektów: za piecem i kolumną; na wokalu/bębnach też działają) ---
     if (source != sxa::Mix)

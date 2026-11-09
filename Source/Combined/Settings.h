@@ -61,6 +61,7 @@ namespace sxa
         float dlyModel = 0, dlyTime = 350.f, dlyFeedback = 0.35f, dlyMix = 0.25f;
         float wahOn = 0, wahPos = 0.45f;
         float triAmp = 0, triLow = 0.f, triMid = 0.f, triHigh = -6.f;
+        float cabAir = 0.f;
         float trueDouble = 0, msMonoBass = 20.f, msSideHigh = 0.f, msMidPresence = 0.f;
         // kanał konsolety (sterowany też z miksera na sumie)
         float mixFader = 0.f, mixMute = 0, mixSolo = 0, chLow = 0.f, chMid = 0.f, chMidHz = 1000.f, chHigh = 0.f;
@@ -171,6 +172,7 @@ namespace sxa
         { "triLow",     "3 piece: dół (Bogner)",  "Dół",          &Settings::triLow,   -12, 6,     Kind::Decibel },
         { "triMid",     "3 piece: środek (twój piec)", "Środek",  &Settings::triMid,   -12, 6,     Kind::Decibel },
         { "triHigh",    "3 piece: góra (Rockman)", "Góra",        &Settings::triHigh,  -18, 6,     Kind::Decibel },
+        { "cabAir",     "Kolumna: powietrze pokoju", "Powietrze", &Settings::cabAir,    0, 1,     Kind::Percent },
         { "trueDouble", "Prawdziwy dubel (dwa podejścia przez przester)", "Prawdziwy dubel", &Settings::trueDouble, 0, 1, Kind::Toggle },
         { "msMonoBass", "Suma: mono dół poniżej",  "Mono dół",    &Settings::msMonoBass, 20, 250,  Kind::Hertz },
         { "msSideHigh", "Suma: góra boków",        "Góra boków",  &Settings::msSideHigh, -6, 6,    Kind::Decibel },

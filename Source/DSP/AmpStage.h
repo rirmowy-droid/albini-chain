@@ -126,6 +126,9 @@ private:
     stonoga::Biquad modelHp[maxCh];               // sprzężenie wejścia (zależne od modelu)
     stonoga::Biquad presenceF[maxCh], resonanceF[maxCh];
     DBiquad buzzLp[maxCh], buzzHp[maxCh];
+    DBiquad xfmrPre[maxCh], xfmrPost[maxCh];       // transformator wyjściowy: dół nasyca się pierwszy
+    float blockEnv[maxCh][maxStages] {};           // „zatykanie” lampy po mocnym uderzeniu (prąd siatki)
+    float blkAtt = 0.f, blkRel = 0.f;
     float sagEnv = 0.f, sagAtt = 0.f, sagRel = 0.f;
     float cachedDrive = -1.f, cachedGs = 1.f, cachedComp = 1.f;
 

@@ -33,6 +33,7 @@ public:
         fb[0] = fb[1] = 0.f; lfo = 0.f;
         for (auto& f : tone) f.reset();
         tone[0].lowpass (sr, 6500.f, 0.6f); tone[1].lowpass (sr, 6500.f, 0.6f);
+        for (auto& f : bassLp) { f.reset(); f.lowpass (sr, 180.f, 0.7071f); }
     }
 
     void process (juce::dsp::AudioBlock<float>& block, int model, float rate, float depth, float colour)
@@ -87,11 +88,14 @@ public:
                     {
                         // 4 stopnie wszechprzepustowe 1. rzędu, częstotliwość sterowana LFO (wykładniczo)
                         static const float vibe[4] = { 1.f, 1.9f, 3.4f, 6.1f };
-                        const float lo = model == Rotovibe ? 120.f : 200.f, hi = model == Rotovibe ? 1600.f : 3200.f;
+                        const float lo = model == Rotovibe ? 200.f : 250.f, hi = model == Rotovibe ? 1600.f : 3200.f;
                         const float span = std::pow (hi / lo, 0.3f + 0.7f * depth);
                         const float f0 = lo * std::pow (span, 0.5f + 0.5f * m);
                         const float g = model == SmallStone ? 0.7f * colour : (model == Phase90 ? 0.1f : 0.f);
-                        float v = x + g * fb[c];
+                        // dół poniżej ok. 180 Hz omija stopnie fazowe: niskie struny nie pływają w stroju
+                        const float low = bassLp[c].process (x);
+                        const float xh = x - low;
+                        float v = xh + g * fb[c];
                         for (int k = 0; k < 4; ++k)
                         {
                             const float fk = model == Rotovibe ? f0 * vibe[k] : f0;
@@ -102,7 +106,7 @@ public:
                             v = out;
                         }
                         fb[c] = v;
-                        y = 0.5f * (x + v);
+                        y = low + 0.5f * (xh + v);
                         if (model == Rotovibe) y *= 1.f - 0.15f * depth * (0.5f + 0.5f * m);   // fotokomórka: lekka modulacja głośności
                         break;
                     }
@@ -115,10 +119,10 @@ public:
 
 private:
     // wyrównanie głośności: miks z sygnałem przesuniętym w fazie gasi część pasma
-    static constexpr float outGain[NumModels] = { 1.f, 1.43f, 1.64f, 1.53f, 1.57f, 1.35f, 1.58f };
+    static constexpr float outGain[NumModels] = { 1.f, 1.43f, 1.64f, 1.05f, 1.05f, 1.35f, 1.01f };
     float sr = 48000.f, lfo = 0.f;
     stonoga::Delay dl[2];
     float ap[2][4] {};
     float fb[2] {};
-    stonoga::Biquad tone[2];
+    stonoga::Biquad tone[2], bassLp[2];
 };

@@ -27,6 +27,7 @@
 #include "DrivePedal.h"
 #include "ModFx.h"
 #include "DelayFx.h"
+#include "CabAir.h"
 
 /** Cały tor Stonoga x Albini, niezależny od wtyczki (używany też w testach).
 
@@ -124,6 +125,7 @@ private:
     DrivePedal drive;
     ModFx modFx;
     DelayFx delayFx;
+    CabAir cabAir;
     // wah na stałe (podbity środek) i trzy piece Jerdena
     stonoga::Biquad wahBp[2];
     float wahApplied = -1.f;
