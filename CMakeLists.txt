@@ -13,7 +13,7 @@ endif()
 # ---------------------------------------------------------------------------
 # JUCE: use ./JUCE if present (CI clones it there), otherwise fetch it.
 # ---------------------------------------------------------------------------
-set(ALBINI_JUCE_TAG "8.0.4" CACHE STRING "JUCE git tag used when fetching")
+set(ALBINI_JUCE_TAG "8.0.15" CACHE STRING "JUCE git tag used when fetching")
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/JUCE/CMakeLists.txt")
     add_subdirectory(JUCE)

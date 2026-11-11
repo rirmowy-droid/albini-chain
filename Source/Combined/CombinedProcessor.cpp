@@ -525,8 +525,9 @@ void CombinedProcessor::timerCallback()
 
 void CombinedProcessor::updateTrackProperties (const TrackProperties& props)
 {
-    trackName = props.name;
-    sxa::MixRegistry::get().setName (registrySlot, props.name);
+    // JUCE 8.0.10+: nazwa ścieżki jest opcjonalna (host może jej nie podać)
+    trackName = props.name.value_or (juce::String());
+    sxa::MixRegistry::get().setName (registrySlot, trackName);
 }
 
 // ---------------------------------------------------------------------------

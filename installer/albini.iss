@@ -40,6 +40,7 @@ Name: "desktopicon"; Description: "Skrót na pulpicie do Stonoga x Albini (bez D
 Source: "{#AlbiniVst3}\*"; DestDir: "{commoncf64}\VST3\Albini Chain.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#ComboVst3}\*";  DestDir: "{commoncf64}\VST3\Stonoga x Albini.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#ComboExe}";     DestDir: "{app}"; Flags: ignoreversion
+Source: "..\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\Stonoga x Albini (bez DAW)"; Filename: "{app}\Stonoga x Albini.exe"
